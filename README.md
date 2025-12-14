@@ -2,7 +2,7 @@
 
 A Pothos plugin that automatically generates GraphQL schemas based on Drizzle schema information.
 
-![](./document/image.png)
+![](./documents/image.png)
 
 # usage
 
