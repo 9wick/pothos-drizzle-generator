@@ -1,6 +1,7 @@
 import SchemaBuilder from "@pothos/core";
 import { PothosDrizzleGeneratorPlugin } from "./PothosDrizzleGeneratorPlugin.js";
 export * from "./global-types.js";
+export * from "./libs/operations.js";
 
 const pluginName = "pothosDrizzleGenerator" as const;
 const allowPluginReRegistration = SchemaBuilder.allowPluginReRegistration;

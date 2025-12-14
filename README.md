@@ -4,6 +4,10 @@ A Pothos plugin that automatically generates GraphQL schemas based on Drizzle sc
 
 ![](./documents/image.png)
 
+# sample
+
+https://github.com/SoraKumo001/pothos-drizzle-generator-sample
+
 # usage
 
 To use this service, you must have version `drizzle-orm@1.0.0-beta.2` or later.
