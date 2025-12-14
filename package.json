@@ -1,0 +1,40 @@
+{
+  "name": "pothos-drizzle-generator",
+  "version": "0.0.1",
+  "main": "./dist/cjs/index.js",
+  "types": "./dist/cjs/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/cjs/index.js",
+      "import": "./dist/esm/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc && tsc -p ./tsconfig.esm.json && cpy esm dist",
+    "watch": "tsc -b -w",
+    "lint": "eslint ./src",
+    "lint:fix": "eslint --fix ./src"
+  },
+  "dependencies": {
+    "@graphql-tools/utils": "10.11.0",
+    "@pothos/core": "4.10.0",
+    "@pothos/plugin-drizzle": "0.16.0",
+    "drizzle-orm": "1.0.0-beta.2-f9236e3",
+    "graphql": "16.12.0",
+    "graphql-scalars": "1.25.0"
+  },
+  "devDependencies": {
+    "@types/graphql": "14.5.0",
+    "@eslint/js": "9.39.2",
+    "eslint": "9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-import-resolver-typescript": "^4.4.4",
+    "eslint-plugin-import": "^2.32.0",
+    "typescript": "5.9.3",
+    "typescript-eslint": "^8.49.0",
+    "cpy-cli": "^6.0.0"
+  },
+  "repository": "https://github.com/node-libraries/pothos-drizzle-generator",
+  "author": "SoraKumo <info@croud.jp>",
+  "license": "MIT"
+}
