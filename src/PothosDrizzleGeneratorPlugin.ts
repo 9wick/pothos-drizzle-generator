@@ -23,7 +23,6 @@ export class PothosDrizzleGeneratorPlugin<
     const generator = this.generator;
 
     const builder = this.builder;
-    const depthLimit = generator.getDepthLimit();
     const tables = generator.getTables();
     for (const [
       modelName,
@@ -38,6 +37,7 @@ export class PothosDrizzleGeneratorPlugin<
         where,
         orderBy,
         inputData,
+        depthLimit,
       },
     ] of Object.entries(tables)) {
       const objectRef = builder.objectRef(modelName);
@@ -67,7 +67,7 @@ export class PothosDrizzleGeneratorPlugin<
           const relayList = filterRelations.map(([relayName, relay]) => {
             const modelName = relay.targetTableName;
             const { executable, where, orderBy, limit, operations } =
-              tables[modelName];
+              tables[modelName]!;
             const operation =
               relay.relationType === "one" ? "findFirst" : "findMany";
             if (!operations.includes(operation)) return [];
@@ -125,7 +125,7 @@ export class PothosDrizzleGeneratorPlugin<
           const relayCount = filterRelations.map(([relayName, relay]) => {
             const modelName = relay.targetTableName;
             const operation = "count";
-            const { executable, where, operations } = tables[modelName];
+            const { executable, where, operations } = tables[modelName]!;
             if (!operations.includes(operation)) return [];
 
             const inputWhere = generator.getInputWhere(modelName);

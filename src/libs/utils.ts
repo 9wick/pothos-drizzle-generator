@@ -1,7 +1,6 @@
 import { collectFields } from "@graphql-tools/utils";
 import * as p from "drizzle-orm";
-
-import { GraphQLResolveInfo, FieldNode, SelectionNode } from "graphql";
+import type { GraphQLResolveInfo, FieldNode, SelectionNode } from "graphql";
 
 function getDepthFromSelection(
   selection: SelectionNode | FieldNode,
@@ -18,10 +17,12 @@ function getDepthFromSelection(
 }
 
 export function getQueryDepth(info: GraphQLResolveInfo): number {
+  if (!info.fieldNodes[0]) return 0;
   return getDepthFromSelection(info.fieldNodes[0], 0);
 }
 
 export const getQueryFields = (info: GraphQLResolveInfo) => {
+  if (!info.fieldNodes[0]) return {};
   return Object.fromEntries(
     Array.from(
       collectFields(

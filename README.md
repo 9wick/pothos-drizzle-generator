@@ -49,6 +49,8 @@ const schema = builder.toSchema();
 
 # Options
 
+Settings defined in `all` are overridden by `models`.
+
 ```ts
 const builder = new SchemaBuilder<PothosTypes>({
   plugins: [
@@ -65,12 +67,32 @@ const builder = new SchemaBuilder<PothosTypes>({
     depthLimit: ({ ctx, modelName, operation }) => $limit$,
     // Specifying the model to use
     use: { include: [...$modelNames$], exclude: [...$modelNames$] },
+    // Applies to all models
+    all:{
+      // Specifying fields to use in queries
+      fields: ({ modelName }) => { include: [...$fields$], exclude: [...$fields$] },
+      // Specifying the method of operation for the model
+      operations: ({ modelName }) => { include: [...$operation$], exclude: [...$operation$] },
+      // Runtime Permission Check
+      executable: ({ ctx, modelName, operation }) => $permission$,
+      // Specify the maximum value for the query's limit
+      limit: ({ ctx, modelName, operation }) => $limit$,
+      // Override the query's orderBy
+      orderBy: ({ ctx, modelName, operation }) => $orderBy$,
+      // Add query conditions
+      where: ({ ctx, modelName, operation }) => $where$,
+      // Specifying input fields
+      inputFields: { include: [$fields$], exclude: [$fields$] },
+      // Overwriting input data
+      inputData: ({ ctx, modelName, operation }) => $inputData$,
+    },
+    // Apply to individual models
     models: {
       [$modelName$]: {
         // Specifying fields to use in queries
-        fields: { include: [...$fields$], exclude: [...$fields$] },
+        fields: ({ modelName }) => { include: [...$fields$], exclude: [...$fields$] },
         // Specifying the method of operation for the model
-        operations: { include: [...$operation$], exclude: [...$operation$] },
+        operations: ({ modelName }) => { include: [...$operation$], exclude: [...$operation$] },
         // Runtime Permission Check
         executable: ({ ctx, modelName, operation }) => $permission$,
         // Specify the maximum value for the query's limit
@@ -83,6 +105,72 @@ const builder = new SchemaBuilder<PothosTypes>({
         inputFields: { include: [$fields$], exclude: [$fields$] },
         // Overwriting input data
         inputData: ({ ctx, modelName, operation }) => $inputData$,
+      },
+    },
+  },
+});
+```
+
+- example
+
+```ts
+const builder = new SchemaBuilder<PothosTypes>({
+  plugins: [
+    DrizzlePlugin,
+    PothosDrizzleGeneratorPlugin, // Set plugin
+  ],
+  drizzle: {
+    client: () => db,
+    relations,
+    getTableConfig,
+  },
+  pothosDrizzleGenerator: {
+    // Tables not used
+    use: { exclude: ["postsToCategories"] },
+    all: {
+      // Maximum query depth
+      depthLimit: () => 5,
+      executable: ({ operation, ctx }) => {
+        // Prohibit write operations if the user is not authenticated
+        if (isOperation(OperationMutation, operation) && !ctx.get("user")) {
+          return false;
+        }
+        return true;
+      },
+      inputFields: () => {
+        // Exclude auto-generated fields
+        return { exclude: ["createdAt", "updatedAt"] };
+      },
+    },
+    models: {
+      users: {
+        // Prohibit data modification
+        // operations: { exclude: ["mutation"] },
+      },
+      posts: {
+        // Fields that cannot be overwritten
+        // inputFields: () => ({ exclude: ["createdAt", "updatedAt"] }), // Defined in "all", so commented out
+        // Set the current user's ID when writing data
+        inputData: ({ ctx }) => {
+          const user = ctx.get("user");
+          if (!user) throw new Error("No permission");
+          return { authorId: user.id };
+        },
+        where: ({ ctx, operation }) => {
+          // When querying, only return published data or the user's own data
+          if (isOperation(OperationQuery, operation)) {
+            return {
+              OR: [
+                { published: true },
+                { authorId: { eq: ctx.get("user")?.id } },
+              ],
+            };
+          }
+          // When writing, only allow operations on the user's own data
+          if (isOperation(OperationMutation, operation)) {
+            return { authorId: ctx.get("user")?.id };
+          }
+        },
       },
     },
   },

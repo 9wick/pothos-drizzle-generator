@@ -30,31 +30,48 @@ type ModelData = {
   inputColumns: PgColumn<any, object>[];
   tableInfo: ReturnType<typeof getTableConfig>;
   relations: RelationsRecord;
-  executable?: (params: {
-    ctx: any;
-    modelName: string;
-    operation: (typeof OperationBasic)[number];
-  }) => boolean | undefined;
-  limit?: (params: {
-    ctx: any;
-    modelName: string;
-    operation: (typeof OperationBasic)[number];
-  }) => number | undefined;
-  orderBy?: (params: {
-    ctx: any;
-    modelName: string;
-    operation: (typeof OperationBasic)[number];
-  }) => object | undefined;
-  where?: (params: {
-    ctx: any;
-    modelName: string;
-    operation: (typeof OperationBasic)[number];
-  }) => object | undefined;
-  inputData?: (params: {
-    ctx: any;
-    modelName: string;
-    operation: (typeof OperationBasic)[number];
-  }) => object | undefined;
+  executable?:
+    | ((params: {
+        ctx: any;
+        modelName: string;
+        operation: (typeof OperationBasic)[number];
+      }) => boolean | undefined)
+    | undefined;
+  limit?:
+    | ((params: {
+        ctx: any;
+        modelName: string;
+        operation: (typeof OperationBasic)[number];
+      }) => number | undefined)
+    | undefined;
+  orderBy?:
+    | ((params: {
+        ctx: any;
+        modelName: string;
+        operation: (typeof OperationBasic)[number];
+      }) => object | undefined)
+    | undefined;
+  where?:
+    | ((params: {
+        ctx: any;
+        modelName: string;
+        operation: (typeof OperationBasic)[number];
+      }) => object | undefined)
+    | undefined;
+  inputData?:
+    | ((params: {
+        ctx: any;
+        modelName: string;
+        operation: (typeof OperationBasic)[number];
+      }) => object | undefined)
+    | undefined;
+  depthLimit?:
+    | ((params: {
+        ctx: any;
+        modelName: string;
+        operation: (typeof OperationBasic)[number];
+      }) => number | undefined)
+    | undefined;
 };
 
 export class PothosDrizzleGenerator {
@@ -80,38 +97,43 @@ export class PothosDrizzleGenerator {
     const relations = this.getRelations();
     const tables = Object.values(relations)
       .filter((t) => isTable(t.table))
-      .map(({ name, table, relations }) => {
+      .map(({ name: modelName, table, relations }) => {
         const tableInfo = getConfig(table as PgTable);
-        const modelOptions = options?.models?.[name];
+        const allOptions = options?.all;
+        const modelOptions = options?.models?.[modelName];
         const columns = tableInfo.columns;
         //Operations
+        const operationValue = (
+          modelOptions?.operations ?? allOptions?.operations
+        )?.({ modelName });
         const operationIncludes = expandOperations(
-          modelOptions?.operations?.include ?? OperationBasic
+          operationValue?.include ?? OperationBasic
         );
         const operationExcludes = expandOperations(
-          modelOptions?.operations?.exclude ?? []
+          operationValue?.exclude ?? []
         );
         const operations = operationIncludes.filter(
           (v) => !operationExcludes.includes(v)
         );
-
         // Columns filter
-        const include =
-          options?.models?.[name]?.fields?.include ??
-          columns.map((c) => c.name);
-        const exclude = options?.models?.[name]?.fields?.exclude ?? [];
+        const columnValue = (modelOptions?.fields ?? allOptions?.fields)?.({
+          modelName,
+        });
+        const include = columnValue?.include ?? columns.map((c) => c.name);
+        const exclude = columnValue?.exclude ?? [];
         const filterColumns = include.filter((name) => !exclude.includes(name));
         // Input columns filter
+        const inputFieldValue = (
+          modelOptions?.inputFields ?? allOptions?.inputFields
+        )?.({ modelName });
         const includeInput =
-          options?.models?.[name]?.inputFields?.include ??
-          columns.map((c) => c.name);
-        const excludeInput =
-          options?.models?.[name]?.inputFields?.exclude ?? [];
+          inputFieldValue?.include ?? columns.map((c) => c.name);
+        const excludeInput = inputFieldValue?.exclude ?? [];
         const filterInputColumns = includeInput.filter(
           (name) => !excludeInput.includes(name)
         );
         return [
-          name,
+          modelName,
           {
             table,
             columns: columns.filter((c) => filterColumns.includes(c.name)),
@@ -121,11 +143,12 @@ export class PothosDrizzleGenerator {
             ),
             tableInfo,
             relations,
-            executable: modelOptions?.executable,
-            limit: modelOptions?.limit,
-            orderBy: modelOptions?.orderBy,
-            where: modelOptions?.where,
-            inputData: modelOptions?.inputData,
+            executable: modelOptions?.executable ?? allOptions?.executable,
+            limit: modelOptions?.limit ?? allOptions?.limit,
+            orderBy: modelOptions?.orderBy ?? allOptions?.orderBy,
+            where: modelOptions?.where ?? allOptions?.where,
+            inputData: modelOptions?.inputData ?? allOptions?.inputData,
+            depthLimit: modelOptions?.depthLimit ?? allOptions?.depthLimit,
           },
         ] as const;
       });
@@ -158,11 +181,6 @@ export class PothosDrizzleGenerator {
     this.tables = tables;
     return tables;
   }
-  getDepthLimit() {
-    const options = this.builder.options.pothosDrizzleGenerator;
-    return options?.depthLimit;
-  }
-
   getInputType(
     modelName: string,
     type: string,
@@ -170,14 +188,14 @@ export class PothosDrizzleGenerator {
   ) {
     if (!this.inputType[modelName]) this.inputType[modelName] = {};
     if (this.inputType[modelName][type]) return this.inputType[modelName][type];
-    const { tableInfo } = this.getTables()[modelName];
+    const { tableInfo } = this.getTables()[modelName]!;
     const input = this.builder.inputType(`${tableInfo.name}${type}`, options);
     this.inputType[modelName][type] = input;
     return input;
   }
 
   getInputCreate(modelName: string) {
-    const { inputColumns } = this.getTables()[modelName];
+    const { inputColumns } = this.getTables()[modelName]!;
     return this.getInputType(modelName, "Create", {
       fields: (t) =>
         Object.fromEntries(
@@ -192,7 +210,7 @@ export class PothosDrizzleGenerator {
     });
   }
   getInputUpdate(modelName: string) {
-    const { inputColumns } = this.getTables()[modelName];
+    const { inputColumns } = this.getTables()[modelName]!;
     return this.getInputType(modelName, "Input", {
       fields: (t) => {
         return Object.fromEntries(
@@ -207,7 +225,7 @@ export class PothosDrizzleGenerator {
     });
   }
   getInputWhere(modelName: string) {
-    const { tableInfo } = this.getTables()[modelName];
+    const { tableInfo } = this.getTables()[modelName]!;
     const inputWhere = this.getInputType(modelName, "Where", {
       fields: (t) => {
         return Object.fromEntries([
@@ -228,7 +246,7 @@ export class PothosDrizzleGenerator {
     return inputWhere;
   }
   getInputOrderBy(modelName: string) {
-    const { tableInfo } = this.getTables()[modelName];
+    const { tableInfo } = this.getTables()[modelName]!;
     const inputWhere = this.getInputType(modelName, "OrderBy", {
       fields: (t) => {
         return Object.fromEntries(
@@ -236,7 +254,7 @@ export class PothosDrizzleGenerator {
             return [
               c.name,
               t.field({
-                type: this.enums["OrderBy"],
+                type: this.enums["OrderBy"]!,
               }),
             ];
           })
@@ -307,7 +325,7 @@ export class PothosDrizzleGenerator {
       case "ufloat":
         return isArray ? ["Float"] : "Float";
     }
-    const type = isArray ? types[1] : types[0];
+    const type = isArray ? types[1]! : types[0]!;
     const scalerMap: Record<string, string> = {
       bigint: "BigInt",
       number: "Float",

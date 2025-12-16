@@ -1,9 +1,10 @@
-import { SchemaTypes } from "@pothos/core";
-import type { PothosDrizzleGeneratorPlugin } from "./PothosDrizzleGeneratorPlugin";
+import type { SchemaTypes } from "@pothos/core";
+import type { PothosDrizzleGeneratorPlugin } from "./PothosDrizzleGeneratorPlugin.js";
 import type {
   DBQueryConfigColumns,
   GetTableViewFieldSelection,
   RelationsFilter,
+  SchemaEntry,
 } from "drizzle-orm";
 import type { Operation, OperationBasic } from "./libs/operations.js";
 import type { PgInsertValue, PgTable } from "drizzle-orm/pg-core";
@@ -17,40 +18,127 @@ declare global {
       pothosDrizzleGenerator: PothosDrizzleGeneratorPlugin<Types, T>;
     }
     type Relations<Types extends SchemaTypes> = Types["DrizzleRelations"];
-    type Tables<Types extends SchemaTypes> = keyof Relations<Types>;
+    type TableNames<Types extends SchemaTypes> = keyof Relations<Types>;
     type Columns<
       Types extends SchemaTypes,
-      U extends Tables<Types>
+      U extends TableNames<Types>
     > = keyof DBQueryConfigColumns<
       GetTableViewFieldSelection<Relations<Types>[U]["table"]>
     >;
+    type AnyTable<Types extends SchemaTypes> =
+      Relations<Types>[keyof Relations<Types>]["table"];
+
+    type AnyColumns<Types extends SchemaTypes> = AnyTable<Types> extends infer R
+      ? R extends SchemaEntry
+        ? keyof DBQueryConfigColumns<GetTableViewFieldSelection<R>>
+        : never
+      : never;
+
     export interface SchemaBuilderOptions<Types extends SchemaTypes> {
       pothosDrizzleGenerator?: {
-        depthLimit?: (params: {
-          ctx: Types["Context"];
-          modelName: Tables<Types>;
-          operation: (typeof OperationBasic)[number];
-        }) => number | undefined;
         use?:
           | { include: (keyof Relations<Types>)[]; exclude?: undefined }
           | { exclude: (keyof Relations<Types>)[]; include?: undefined };
+        all?: {
+          depthLimit?: <U extends TableNames<Types>>(params: {
+            ctx: Types["Context"];
+            modelName: U;
+            operation: (typeof OperationBasic)[number];
+          }) => number | undefined;
+          fields?: <U extends TableNames<Types>>(params: {
+            modelName: U;
+          }) =>
+            | {
+                include: AnyColumns<Types>[];
+                exclude?: undefined;
+              }
+            | {
+                exclude: AnyColumns<Types>[];
+                include?: undefined;
+              }
+            | undefined;
+          operations?: <U extends TableNames<Types>>(params: {
+            modelName: U;
+          }) =>
+            | {
+                include?: Operation[];
+                exclude?: Operation[];
+              }
+            | undefined;
+          executable?: <U extends TableNames<Types>>(params: {
+            ctx: Types["Context"];
+            modelName: U;
+            operation: (typeof OperationBasic)[number];
+          }) => boolean | undefined;
+          limit?: <U extends TableNames<Types>>(params: {
+            ctx: Types["Context"];
+            modelName: U;
+            operation: (typeof OperationBasic)[number];
+          }) => number | undefined;
+          orderBy?: <U extends TableNames<Types>>(params: {
+            ctx: Types["Context"];
+            modelName: U;
+            operation: (typeof OperationBasic)[number];
+          }) => { [P in AnyColumns<Types>]?: "asc" | "desc" } | undefined;
+          where?: <U extends TableNames<Types>>(params: {
+            ctx: Types["Context"];
+            modelName: U;
+            operation: (typeof OperationBasic)[number];
+          }) =>
+            | RelationsFilter<Relations<Types>[U], Relations<Types>>
+            | undefined;
+          inputFields?: <U extends TableNames<Types>>(params: {
+            modelName: U;
+          }) =>
+            | {
+                include: AnyColumns<Types>[];
+                exclude?: undefined;
+              }
+            | {
+                exclude: AnyColumns<Types>[];
+                include?: undefined;
+              }
+            | undefined;
+          inputData?: <U extends TableNames<Types>>(params: {
+            ctx: Types["Context"];
+            modelName: U;
+            operation: (typeof OperationBasic)[number];
+          }) =>
+            | PgInsertValue<
+                Relations<Types>[U]["table"] extends PgTable
+                  ? Relations<Types>[U]["table"]
+                  : never,
+                true
+              >
+            | undefined;
+        };
         models?: {
-          [U in Tables<Types>]?: {
-            fields?:
+          [U in TableNames<Types>]?: {
+            depthLimit?: (params: {
+              ctx: Types["Context"];
+              modelName: U;
+              operation: (typeof OperationBasic)[number];
+            }) => number | undefined;
+            fields?: (params: { modelName: U }) =>
               | { include: Columns<Types, U>[]; exclude?: undefined }
               | {
                   exclude: Columns<Types, U>[];
                   include?: undefined;
                 };
-            operations?: {
-              include?: Operation[];
-              exclude?: Operation[];
-            };
+            operations?: <U extends TableNames<Types>>(params: {
+              modelName: U;
+            }) =>
+              | {
+                  include?: Operation[];
+                  exclude?: Operation[];
+                }
+              | undefined;
+
             executable?: (params: {
               ctx: Types["Context"];
               modelName: U;
               operation: (typeof OperationBasic)[number];
-            }) => boolean;
+            }) => boolean | undefined;
             limit?: (params: {
               ctx: Types["Context"];
               modelName: U;
@@ -68,7 +156,7 @@ declare global {
             }) =>
               | RelationsFilter<Relations<Types>[U], Relations<Types>>
               | undefined;
-            inputFields?:
+            inputFields?: (params: { modelName: U }) =>
               | { include: Columns<Types, U>[]; exclude?: undefined }
               | {
                   exclude: Columns<Types, U>[];
