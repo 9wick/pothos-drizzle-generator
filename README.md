@@ -148,10 +148,6 @@ const builder = new SchemaBuilder<PothosTypes>({
       },
     },
     models: {
-      users: {
-        // Prohibit data modification
-        // operations: { exclude: ["mutation"] },
-      },
       posts: {
         // Fields that cannot be overwritten
         // inputFields: () => ({ exclude: ["createdAt", "updatedAt"] }), // Defined in "all", so commented out
