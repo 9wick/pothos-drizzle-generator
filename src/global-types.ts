@@ -168,10 +168,9 @@ declare global {
               operation: (typeof OperationBasic)[number];
             }) =>
               | PgInsertValue<
-                  Relations<Types>[U]["table"] extends PgTable
+                  Relations<Types>[U]["table"] extends PgTable<any>
                     ? Relations<Types>[U]["table"]
-                    : never,
-                  true
+                    : never
                 >
               | undefined;
           };
