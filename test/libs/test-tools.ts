@@ -3,7 +3,7 @@ import SchemaBuilder, {
   type NormalizeSchemeBuilderOptions,
 } from "@pothos/core";
 import DrizzlePlugin from "@pothos/plugin-drizzle";
-import { Client, cacheExchange, fetchExchange, gql } from "@urql/core";
+import { Client, cacheExchange, fetchExchange } from "@urql/core";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { getTableConfig } from "drizzle-orm/pg-core";
 import { Hono } from "hono";
