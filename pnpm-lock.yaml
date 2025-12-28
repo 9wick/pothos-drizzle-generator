@@ -75,9 +75,6 @@ importers:
       hono:
         specifier: ^4.11.3
         version: 4.11.3
-      jest-date-mock:
-        specifier: 1.0.10
-        version: 1.0.10
       jose:
         specifier: 6.1.3
         version: 6.1.3
@@ -1790,9 +1787,6 @@ packages:
 
   isexe@2.0.0:
     resolution: {integrity: sha512-RHxMLp9lnKHGHRng9QFhRCMbYAcVpn69smSGcq3f36xjgVVWThj4qqLbTLlq7Ssj8B+fIQ1EuCEGI2lKsyQeIw==}
-
-  jest-date-mock@1.0.10:
-    resolution: {integrity: sha512-g0CM7mJHppz8SCayrtJ0Wm2ge8T0SiKCR9bmVLeflipqWjZ8hieNk6vBF0t3dJFc5jlsjvzTbRud8kPjoD0VgA==}
 
   jose@6.1.3:
     resolution: {integrity: sha512-0TpaTfihd4QMNwrz/ob2Bp7X04yuxJkjRGi4aKmOqwhov54i6u79oCv7T+C7lo70MKH6BesI3vscD1yb/yzKXQ==}
@@ -4162,8 +4156,6 @@ snapshots:
   isarray@2.0.5: {}
 
   isexe@2.0.0: {}
-
-  jest-date-mock@1.0.10: {}
 
   jose@6.1.3: {}
 
