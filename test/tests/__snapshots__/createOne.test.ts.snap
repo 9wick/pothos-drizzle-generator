@@ -32,6 +32,35 @@ exports[`createOne > create 1`] = `
 }
 `;
 
+exports[`createOne > create may to many 1`] = `
+{
+  "createOnePost": {
+    "__typename": "Post",
+    "author": null,
+    "authorCount": 0,
+    "authorId": null,
+    "categories": [
+      {
+        "__typename": "Category",
+        "name": "Lia",
+      },
+      {
+        "__typename": "Category",
+        "name": "Aukai",
+      },
+      {
+        "__typename": "Category",
+        "name": "Clotile",
+      },
+    ],
+    "categoriesCount": 3,
+    "content": "many to many",
+    "published": true,
+    "title": "many to many",
+  },
+}
+`;
+
 exports[`createOne > create no relay 1`] = `
 {
   "createOnePost": {

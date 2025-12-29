@@ -42,7 +42,7 @@ const query = gql`
   }
 
   mutation UpdatePost(
-    $input: PostInput!
+    $input: PostUpdate!
     $where: PostWhere
     $authorCountWhere: UserWhere
     $categoriesCountWhere: CategoryWhere
@@ -90,7 +90,7 @@ const query2 = gql`
     updatedAt
     publishedAt
   }
-  mutation UpdatePost($input: PostInput!, $where: PostWhere) {
+  mutation UpdatePost($input: PostUpdate!, $where: PostWhere) {
     updatePost(input: $input, where: $where) {
       ...post
     }

@@ -131,4 +131,28 @@ describe("createOne", () => {
     ).toMatchSnapshot();
     expect(getLogs(db).length).toBe(1);
   });
+
+  it("create may to many", async () => {
+    const post = await db.query.posts.findFirst();
+    const categories = await db.query.categories.findMany({
+      limit: 3,
+      orderBy: { name: "asc" },
+    });
+    clearLogs(db);
+    const result = await client.mutation(query, {
+      input: {
+        title: "many to many",
+        content: "many to many",
+        published: true,
+        categories: { set: categories.map((v) => ({ id: v.id })) },
+      },
+      where: {
+        id: { eq: post?.id },
+      },
+    });
+    expect(
+      filterObject(result.data, ["id", "createdAt", "updatedAt", "publishedAt"])
+    ).toMatchSnapshot();
+    // expect(getLogs(db).length).toBe(2);
+  });
 });

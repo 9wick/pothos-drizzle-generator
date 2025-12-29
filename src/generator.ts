@@ -31,7 +31,7 @@ import type {
 import type { RelationalQueryBuilder } from "drizzle-orm/pg-core/query-builders/query";
 import type { GraphQLResolveInfo } from "graphql";
 
-type ModelData = {
+export type ModelData = {
   table: SchemaEntry;
   operations: (typeof OperationBasic)[number][];
   columns: PgColumn[];
@@ -230,23 +230,56 @@ export class DrizzleGenerator<Types extends SchemaTypes> {
   }
 
   getInputCreate(modelName: string) {
-    const { inputColumns } = this.getTables()[modelName]!;
+    const { inputColumns, relations } = this.getTables()[modelName]!;
     return this.getInputType(modelName, "Create", {
       fields: (t) =>
-        Object.fromEntries(
-          inputColumns.map((c: PgColumn) => [
+        Object.fromEntries([
+          ...inputColumns.map((c: PgColumn) => [
             c.name,
             t.field({
               type: this.getDataType(c),
               required: c.notNull && !c.default,
             }),
-          ])
-        ),
+          ]),
+          ...Object.entries(relations)
+            .filter(([, relay]) => relay.through)
+            .map(([relayName, relay]) => {
+              const setType = t.builder.inputType(
+                `${modelName}_TO_${relay.targetTableName}_SET`,
+                {
+                  fields: (t) =>
+                    Object.fromEntries(
+                      relay.targetColumns.map((v) => [
+                        v.name,
+                        t.field({
+                          type: this.getDataType(v),
+                          required: v.notNull,
+                        }),
+                      ])
+                    ),
+                }
+              );
+
+              return [
+                relayName,
+                t.field({
+                  type: t.builder.inputType(
+                    `${modelName}_TO_${relay.targetTableName}`,
+                    {
+                      fields: (t) => ({
+                        set: t.field({ type: [setType] }),
+                      }),
+                    }
+                  ),
+                }),
+              ];
+            }),
+        ]),
     });
   }
   getInputUpdate(modelName: string) {
     const { inputColumns } = this.getTables()[modelName]!;
-    return this.getInputType(modelName, "Input", {
+    return this.getInputType(modelName, "Update", {
       fields: (t) => {
         return Object.fromEntries(
           inputColumns.map((c: PgColumn) => [
@@ -414,13 +447,17 @@ export const replaceColumnValues = (
   return queryData;
 };
 
-export const getReturning = (info: GraphQLResolveInfo, columns: PgColumn[]) => {
+export const getReturning = (
+  info: GraphQLResolveInfo,
+  columns: PgColumn[],
+  primary?: boolean
+) => {
   const queryFields = getQueryFields(info);
   const isRelay = Object.keys(queryFields).some(
     (v) => !columns.find((c) => c.name === v)
   );
   const returnFields = columns
-    .filter((v) => queryFields[v.name])
+    .filter((v) => queryFields[v.name] || (primary && v.primary))
     .map((v) => [v.name, v]);
   if (!returnFields.length)
     return { isRelay, queryFields, returning: undefined };
