@@ -234,11 +234,9 @@ export class DrizzleGenerator<Types extends SchemaTypes> {
     const relayFields = Object.entries(relations)
       .filter(([, relation]) => relation.through)
       .map(([relationName, relation]) => {
-        const targetName = relation.targetTableName;
-
         const rowInputType = this.getInputType(
           modelName,
-          `TO_${targetName}_SET`,
+          `_${relationName}Set`,
           {
             fields: (t) =>
               Object.fromEntries(
@@ -254,7 +252,7 @@ export class DrizzleGenerator<Types extends SchemaTypes> {
         );
         const relationInputType = this.getInputType(
           modelName,
-          `TO_${targetName}`,
+          `_${relationName}`,
           {
             fields: (t) => ({
               set: t.field({ type: [rowInputType] }),

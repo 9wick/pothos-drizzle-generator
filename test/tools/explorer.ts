@@ -5,7 +5,7 @@ import { generate } from "graphql-auto-query";
 import { relations } from "../db/relations";
 import { createApp } from "../libs/test-tools";
 
-export const { app, schema } = createApp({
+export const { app, schema, db } = createApp({
   relations,
   pothosDrizzleGenerator: {},
 });

@@ -133,7 +133,6 @@ describe("createOne", () => {
   });
 
   it("create may to many", async () => {
-    const post = await db.query.posts.findFirst();
     const categories = await db.query.categories.findMany({
       limit: 3,
       orderBy: { name: "asc" },
@@ -147,16 +146,12 @@ describe("createOne", () => {
         categories: { set: categories.map((v) => ({ id: v.id })) },
       },
       categoriesOrderBy: { name: "Asc" },
-      where: {
-        id: { eq: post?.id },
-      },
     });
     expect(
       filterObject(result.data, ["id", "createdAt", "updatedAt", "publishedAt"])
     ).toMatchSnapshot();
   });
   it("create may to many retry", async () => {
-    const post = await db.query.posts.findFirst();
     const categories = await db.query.categories.findMany({
       limit: 3,
       orderBy: { name: "desc" },
@@ -170,9 +165,6 @@ describe("createOne", () => {
         categories: { set: categories.map((v) => ({ id: v.id })) },
       },
       categoriesOrderBy: { name: "Asc" },
-      where: {
-        id: { eq: post?.id },
-      },
     });
     expect(
       filterObject(result.data, ["id", "createdAt", "updatedAt", "publishedAt"])

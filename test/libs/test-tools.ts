@@ -25,8 +25,10 @@ const searchPath = url.searchParams.get("schema") ?? "public";
 
 export const createDB = <TRelations extends AnyRelations = EmptyRelations>({
   relations,
+  isLog,
 }: {
   relations: TRelations;
+  isLog?: boolean;
 }) => {
   const logs: { query: string; params: unknown[] }[] = [];
   const db = drizzle({
@@ -37,6 +39,15 @@ export const createDB = <TRelations extends AnyRelations = EmptyRelations>({
     relations,
     logger: {
       logQuery: (query, params) => {
+        if (isLog) {
+          console.log(
+            "---\n",
+            query,
+            `\n{${params
+              .map((value, index) => `$${index + 1}='${value}'`)
+              .join(",")}}`
+          );
+        }
         logs.push({ query, params });
       },
     },
