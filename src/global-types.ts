@@ -58,6 +58,10 @@ declare global {
             : never]: any;
         };
 
+    type AnyColumnsWithManyRelations<Types extends SchemaTypes> = {
+      [U in TableNames<Types>]: ColumnsWithManyRelations<Types, U>;
+    }[TableNames<Types>];
+
     type ModelParams<Types extends SchemaTypes, U extends TableNames<Types>> = {
       modelName: U;
     };
@@ -89,7 +93,6 @@ declare global {
       ColType extends string | number | symbol
     > = { [P in ColType]?: "asc" | "desc" } | undefined;
 
-    // inputData return type specifically for individual models (includes relations)
     type InputDataReturn<
       Types extends SchemaTypes,
       U extends TableNames<Types>
@@ -111,7 +114,7 @@ declare global {
       ) => number | undefined;
       fields?: <U extends TableNames<Types>>(
         params: ModelParams<Types, U>
-      ) => IncludeExclude<AnyColumns<Types>> | undefined;
+      ) => IncludeExclude<AnyColumnsWithManyRelations<Types>> | undefined;
       operations?: <U extends TableNames<Types>>(
         params: ModelParams<Types, U>
       ) => OperationSelection;
@@ -129,7 +132,7 @@ declare global {
       ) => WhereReturn<Types, any>;
       inputFields?: <U extends TableNames<Types>>(
         params: ModelParams<Types, U>
-      ) => IncludeExclude<AnyColumns<Types>> | undefined;
+      ) => IncludeExclude<AnyColumnsWithManyRelations<Types>> | undefined;
       inputData?: <U extends TableNames<Types>>(
         params: OperationParams<Types, U>
       ) =>
