@@ -152,6 +152,20 @@ describe("findMany", () => {
 
     expect(result.data.findManyUser).toMatchSnapshot();
   });
+
+  it("filters users publish false", async () => {
+    const result = await client.query(query, {
+      where: {
+        posts: { published: { eq: false } },
+      },
+    });
+    const users: { posts: { published: boolean }[] }[] =
+      result.data.findManyUser;
+    expect(users).not.toHaveLength(0);
+    expect(users.every((v) => v.posts.some((v) => v.published === false))).toBe(
+      true
+    );
+  });
 });
 
 describe("findMany - customize", async () => {

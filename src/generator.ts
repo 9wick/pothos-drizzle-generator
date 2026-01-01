@@ -222,6 +222,12 @@ export class DrizzleGenerator<Types extends SchemaTypes> {
     this.tables = tables;
     return tables;
   }
+  getTable(table: SchemaEntry) {
+    const result = Object.values(this.getTables()).find(
+      (v) => v.table === table
+    );
+    return result;
+  }
   getInputType(
     modelName: string,
     type: string,
@@ -231,7 +237,8 @@ export class DrizzleGenerator<Types extends SchemaTypes> {
     if (!this.inputType[modelName]) this.inputType[modelName] = {};
     if (this.inputType[modelName][type]) return this.inputType[modelName][type];
     const { tableInfo } = this.getTables()[modelName]!;
-    const input = this.builder.inputType(`${tableInfo.name}${type}`, options);
+    const input = this.builder.inputRef(`${tableInfo.name}${type}`);
+    input.implement(options);
     this.inputType[modelName][type] = input;
     return input;
   }
@@ -318,7 +325,7 @@ export class DrizzleGenerator<Types extends SchemaTypes> {
     });
   }
   getInputWhere(modelName: string) {
-    const { tableInfo } = this.getTables()[modelName]!;
+    const { tableInfo, relations } = this.getTables()[modelName]!;
     const inputWhere = this.getInputType(modelName, "Where", {
       fields: (t) => {
         return Object.fromEntries([
@@ -330,6 +337,17 @@ export class DrizzleGenerator<Types extends SchemaTypes> {
               c.name,
               t.field({
                 type: this.getInputOperator(this.getDataType(c)),
+              }),
+            ];
+          }),
+          ...Object.entries(relations).map(([key, relay]) => {
+            const table = this.getTable(relay.targetTable);
+            if (!table) return [];
+            const { tableInfo } = table;
+            return [
+              key,
+              t.field({
+                type: `${tableInfo.name}Where`,
               }),
             ];
           }),

@@ -1,4 +1,5 @@
 import { gql } from "@urql/core";
+import { sql } from "drizzle-orm";
 import { describe, it, expect, afterAll, afterEach } from "vitest";
 import { isOperation, OperationMutation, OperationQuery } from "../../src";
 import { relations } from "../db/relations";
@@ -199,9 +200,7 @@ describe("auth", () => {
 
   it("auth user findMany", async () => {
     const user = await db.query.users.findFirst({
-      with: { posts: true },
       where: { posts: { published: false } },
-      orderBy: { id: "asc" },
     });
     const noLogin = await client.query(query, {
       orderBy: [{ id: "Asc" }],
@@ -224,10 +223,11 @@ describe("auth", () => {
 
   it("auth user createOne", async () => {
     const user = await db.query.users.findFirst({
-      with: { posts: true },
       where: { posts: { published: false } },
       orderBy: { id: "asc" },
     });
+    if (!user) throw "No user found";
+
     const noLoginCreate = await client.mutation(mutationCreateOnePost, {
       input: {
         title: "title",
@@ -239,7 +239,7 @@ describe("auth", () => {
       message: "[GraphQL] No permission",
     });
     await client.mutation(mutationSignIn, {
-      email: user?.email,
+      email: user.email,
     });
     const loginCreate = await client.mutation(mutationCreateOnePost, {
       input: {
@@ -249,7 +249,7 @@ describe("auth", () => {
       },
     });
     expect(loginCreate.data.createOnePost).toMatchObject({
-      authorId: user?.id,
+      authorId: user.id,
     });
   });
 });
