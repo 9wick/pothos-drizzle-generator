@@ -126,6 +126,9 @@ const { client, db } = createClient({
           if (!user) throw new Error("No permission");
           return { authorId: user.id };
         },
+        orderBy: () => {
+          return { createdAt: "desc" };
+        },
         where: ({ ctx, operation }) => {
           // isOperation(OperationQuery, ...) を使用
           if (isOperation(OperationQuery, operation)) {

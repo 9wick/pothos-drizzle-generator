@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-namespace */
 import type { Operation, OperationBasic } from "./libs/operations.js";
 import type { PothosDrizzleGenerator } from "./PothosDrizzleGenerator.js";
@@ -55,14 +54,14 @@ declare global {
       | keyof {
           [K in keyof Relations<Types>[U]["relations"] as Relations<Types>[U]["relations"][K] extends AnyMany
             ? K
-            : never]: any;
+            : never]: unknown;
         }
       | keyof {
           [K in keyof Relations<Types>[U]["relations"] as Relations<Types>[U]["relations"][K] extends AnyMany
             ? K extends string
               ? `${K}Count`
               : never
-            : never]: any;
+            : never]: unknown;
         };
 
     type AnyColumnsWithManyRelations<Types extends SchemaTypes> = {
@@ -90,22 +89,57 @@ declare global {
       | { include?: Operation[]; exclude?: Operation[] }
       | undefined;
 
+    /**
+     * Drizzle v2 Pure Object Syntax Operators
+     */
+    type FilterOperator<T> = {
+      eq?: T;
+      ne?: T;
+      gt?: T;
+      gte?: T;
+      lt?: T;
+      lte?: T;
+      in?: T[];
+      notIn?: T[];
+      like?: T;
+      notLike?: T;
+      isNull?: boolean;
+      isNotNull?: boolean;
+    };
+
+    /**
+     * Drizzle v2 Pure Object Filter structure
+     */
+    type FilterObject<T> = {
+      [K in keyof T]?: T[K] | FilterOperator<T[K]>;
+    } & {
+      AND?: FilterObject<T>[];
+      OR?: FilterObject<T>[];
+      NOT?: FilterObject<T>;
+    };
+
     type WhereReturn<Types extends SchemaTypes, U extends TableNames<Types>> =
+      | FilterObject<GetTableViewFieldSelection<GetTable<Types, U>>>
       | RelationsFilter<Relations<Types>[U], Relations<Types>>
       | undefined;
 
-    type OrderByReturn<
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      Types extends SchemaTypes,
-      ColType extends string | number | symbol
-    > = { [P in ColType]?: "asc" | "desc" } | undefined;
+    /**
+     * Represents a union of all possible model filters
+     */
+    type AnyWhereReturn<Types extends SchemaTypes> = {
+      [U in TableNames<Types>]: WhereReturn<Types, U>;
+    }[TableNames<Types>];
+
+    type OrderByReturn<ColType extends string | number | symbol> =
+      | { [P in ColType]?: "asc" | "desc" }
+      | undefined;
 
     type InputDataReturn<
       Types extends SchemaTypes,
       U extends TableNames<Types>
     > =
       | (PgUpdateSetSource<
-          GetTable<Types, U> extends PgTable<any> ? GetTable<Types, U> : never
+          GetTable<Types, U> extends PgTable ? GetTable<Types, U> : never
         > & {
           [K in keyof Relations<Types>[U]["relations"] as Relations<Types>[U]["relations"][K] extends AnyMany
             ? K
@@ -136,10 +170,13 @@ declare global {
       ) => number | undefined;
       orderBy?: <U extends TableNames<Types>>(
         params: OperationParams<Types, U>
-      ) => OrderByReturn<Types, AnyColumns<Types>>;
+      ) => OrderByReturn<AnyColumns<Types>>;
+      /**
+       * Global where filter that can return filters for any model
+       */
       where?: <U extends TableNames<Types>>(
         params: OperationParams<Types, U>
-      ) => WhereReturn<Types, any>;
+      ) => AnyWhereReturn<Types>;
       inputData?: <U extends TableNames<Types>>(
         params: OperationParams<Types, U>
       ) =>
@@ -165,7 +202,7 @@ declare global {
       limit?: (params: OperationParams<Types, U>) => number | undefined;
       orderBy?: (
         params: OperationParams<Types, U>
-      ) => OrderByReturn<Types, Columns<Types, U>>;
+      ) => OrderByReturn<Columns<Types, U>>;
       where?: (params: OperationParams<Types, U>) => WhereReturn<Types, U>;
       inputData?: (
         params: OperationParams<Types, U>
