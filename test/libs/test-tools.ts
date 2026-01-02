@@ -1,7 +1,5 @@
 import { graphqlServer } from "@hono/graphql-server";
-import SchemaBuilder, {
-  type NormalizeSchemeBuilderOptions,
-} from "@pothos/core";
+import SchemaBuilder, { type NormalizeSchemeBuilderOptions } from "@pothos/core";
 import DrizzlePlugin from "@pothos/plugin-drizzle";
 import { Client, cacheExchange, fetchExchange } from "@urql/core";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -14,11 +12,7 @@ import { getCookie } from "hono/cookie";
 import { jwtVerify } from "jose";
 import PothosDrizzleGeneratorPlugin from "../../src/index";
 import type { Context } from "../context";
-import type {
-  AnyRelations,
-  EmptyRelations,
-  TablesRelationalConfig,
-} from "drizzle-orm";
+import type { AnyRelations, EmptyRelations, TablesRelationalConfig } from "drizzle-orm";
 import type { Context as HonoContext } from "hono";
 
 const connectionString = process.env.DATABASE_URL;
@@ -48,9 +42,7 @@ export const createDB = <TRelations extends TablesRelationalConfig>({
           console.log(
             "---\n",
             query,
-            `\n{${params
-              .map((value, index) => `$${index + 1}='${value}'`)
-              .join(",")}}`
+            `\n{${params.map((value, index) => `$${index + 1}='${value}'`).join(",")}}`
           );
         }
         logs.push({ query, params });
@@ -68,9 +60,7 @@ export const getLogs = (db: ReturnType<typeof createDB>) => {
   return db._logs;
 };
 
-export const createBuilder = <
-  TRelations extends AnyRelations = EmptyRelations
->({
+export const createBuilder = <TRelations extends AnyRelations = EmptyRelations>({
   relations,
   pothosDrizzleGenerator,
   onCreateBuilder,

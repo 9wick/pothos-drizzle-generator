@@ -59,14 +59,11 @@ describe("Query: findFirstPost (Drizzle v2 Pure Object Syntax)", () => {
 
     if (!targetPost) throw new Error("No posts found in database");
 
-    const result = await client.query<{ findFirstPost: PostResponse }>(
-      FIND_FIRST_POST,
-      {
-        where: {
-          id: { eq: targetPost.id },
-        },
-      }
-    );
+    const result = await client.query<{ findFirstPost: PostResponse }>(FIND_FIRST_POST, {
+      where: {
+        id: { eq: targetPost.id },
+      },
+    });
 
     expect(result.error).toBeUndefined();
     const data = result.data?.findFirstPost;
@@ -89,15 +86,12 @@ describe("Query: findFirstPost (Drizzle v2 Pure Object Syntax)", () => {
 
     if (!targetPost) throw new Error("No published posts found");
 
-    const result = await client.query<{ findFirstPost: PostResponse }>(
-      FIND_FIRST_POST,
-      {
-        where: {
-          published: { eq: true },
-        },
-        orderBy: [{ createdAt: "Desc" }],
-      }
-    );
+    const result = await client.query<{ findFirstPost: PostResponse }>(FIND_FIRST_POST, {
+      where: {
+        published: { eq: true },
+      },
+      orderBy: [{ createdAt: "Desc" }],
+    });
 
     expect(result.data?.findFirstPost.published).toBe(true);
   });
@@ -108,16 +102,13 @@ describe("Query: findFirstPost (Drizzle v2 Pure Object Syntax)", () => {
     const targetPost = await db.query.posts.findFirst();
     if (!targetPost) throw new Error("Data required");
 
-    const result = await client.query<{ findFirstPost: PostResponse }>(
-      FIND_FIRST_POST,
-      {
-        where: {
-          id: { eq: targetPost.id },
-          title: { eq: targetPost.title },
-          published: { eq: targetPost.published },
-        },
-      }
-    );
+    const result = await client.query<{ findFirstPost: PostResponse }>(FIND_FIRST_POST, {
+      where: {
+        id: { eq: targetPost.id },
+        title: { eq: targetPost.title },
+        published: { eq: targetPost.published },
+      },
+    });
 
     expect(result.data?.findFirstPost.id).toBe(targetPost.id);
   });
@@ -125,14 +116,11 @@ describe("Query: findFirstPost (Drizzle v2 Pure Object Syntax)", () => {
   it("should return null when no record matches the pure object criteria", async () => {
     const nonExistentId = "00000000-0000-0000-0000-000000000000";
 
-    const result = await client.query<{ findFirstPost: PostResponse | null }>(
-      FIND_FIRST_POST,
-      {
-        where: {
-          id: { eq: nonExistentId },
-        },
-      }
-    );
+    const result = await client.query<{ findFirstPost: PostResponse | null }>(FIND_FIRST_POST, {
+      where: {
+        id: { eq: nonExistentId },
+      },
+    });
 
     // findFirst は該当なしの場合 null を返す
     expect(result.data?.findFirstPost).toBeNull();
@@ -142,14 +130,11 @@ describe("Query: findFirstPost (Drizzle v2 Pure Object Syntax)", () => {
     const author = await db.query.users.findFirst();
     if (!author) throw new Error("Author required");
 
-    const result = await client.query<{ findFirstPost: PostResponse }>(
-      FIND_FIRST_POST,
-      {
-        where: {
-          authorId: { eq: author.id },
-        },
-      }
-    );
+    const result = await client.query<{ findFirstPost: PostResponse }>(FIND_FIRST_POST, {
+      where: {
+        authorId: { eq: author.id },
+      },
+    });
 
     expect(result.data?.findFirstPost.authorId).toBe(author.id);
     expect(result.data?.findFirstPost.author.id).toBe(author.id);

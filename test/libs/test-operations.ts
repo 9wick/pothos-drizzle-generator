@@ -32,9 +32,7 @@ export const onCreateBuilder = (
             Record<string, never>,
             typeof relations
           >;
-          const user =
-            email &&
-            (await db.query.users.findFirst({ where: { email: email } }));
+          const user = email && (await db.query.users.findFirst({ where: { email: email } }));
           if (!user) {
             setCookie(ctx, "auth-token", "", {
               httpOnly: true,

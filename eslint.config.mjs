@@ -1,6 +1,7 @@
 import eslint from "@eslint/js";
-import eslintConfigPrettier from "eslint-config-prettier";
+import eslintConfigPrettier from "eslint-config-prettier/flat";
 import importPlugin from "eslint-plugin-import";
+import prettierPlugin from "eslint-plugin-prettier";
 import tslint from "typescript-eslint";
 
 export default [
@@ -8,13 +9,12 @@ export default [
   ...tslint.configs.recommended,
   eslintConfigPrettier,
   {
-    // ignores: ["**/global-types.ts"],
-  },
-  {
     plugins: {
       import: importPlugin,
+      prettier: prettierPlugin,
     },
     rules: {
+      "@typescript-eslint/no-namespace": 0,
       "@typescript-eslint/no-unused-vars": "warn",
       "no-empty-pattern": 1,
       "no-empty": 1,
@@ -35,6 +35,15 @@ export default [
             order: "asc",
             caseInsensitive: true,
           },
+        },
+      ],
+      "prettier/prettier": [
+        "warn",
+        {
+          semi: true,
+          singleQuote: false,
+          printWidth: 100,
+          trailingComma: "es5",
         },
       ],
     },

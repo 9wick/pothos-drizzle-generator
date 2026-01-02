@@ -1,12 +1,7 @@
 import { gql } from "@urql/core";
 import { describe, it, expect } from "vitest";
 import { relations } from "../db/relations";
-import {
-  clearLogs,
-  createClient,
-  filterObject,
-  getLogs,
-} from "../libs/test-tools";
+import { clearLogs, createClient, filterObject, getLogs } from "../libs/test-tools";
 
 export const { app, client, db } = createClient({
   relations,
@@ -70,12 +65,9 @@ describe("Mutation: createOnePost (Drizzle v2 Pure Object Syntax)", () => {
       published: true,
     };
 
-    const result = await client.mutation<{ createOnePost: PostResponse }>(
-      CREATE_ONE_POST,
-      {
-        input,
-      }
-    );
+    const result = await client.mutation<{ createOnePost: PostResponse }>(CREATE_ONE_POST, {
+      input,
+    });
     expect(getLogs(db).length).toBe(4);
     expect(result.error).toBeUndefined();
     const createdPost = result.data?.createOnePost;
@@ -107,17 +99,14 @@ describe("Mutation: createOnePost (Drizzle v2 Pure Object Syntax)", () => {
 
     const uniqueTitle = `unique-${Date.now()}`;
 
-    const result = await client.mutation<{ createOnePost: PostResponse }>(
-      CREATE_ONE_POST,
-      {
-        input: {
-          title: uniqueTitle,
-          content: "Mandatory Content",
-          authorId: author.id,
-          published: false,
-        },
-      }
-    );
+    const result = await client.mutation<{ createOnePost: PostResponse }>(CREATE_ONE_POST, {
+      input: {
+        title: uniqueTitle,
+        content: "Mandatory Content",
+        authorId: author.id,
+        published: false,
+      },
+    });
 
     const createdPost = result.data?.createOnePost;
     if (!createdPost) throw new Error("Post creation failed");

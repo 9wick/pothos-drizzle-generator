@@ -7,7 +7,7 @@ exports[`Mutation: createOnePost (Drizzle v2 Pure Object Syntax) > should create
     "__typename": "User",
     "name": "Agripina",
   },
-  "authorId": "3e0bb3d0-2074-4a1e-6263-d13dd10cb0cf",
+  "authorId": "3e0bb3d0-2074-4a1e-9263-d13dd10cb0cf",
   "content": "Required Content Body",
   "published": true,
   "title": "New Single Post",

@@ -14,20 +14,11 @@ import {
   JSONResolver,
 } from "graphql-scalars";
 import { expandOperations, OperationBasic } from "./libs/operations.js";
-import {
-  createInputOperator,
-  getQueryFields,
-  type FieldTree,
-} from "./libs/utils.js";
+import { createInputOperator, getQueryFields, type FieldTree } from "./libs/utils.js";
 import type { SchemaTypes } from "@pothos/core";
 import type { DrizzleClient } from "@pothos/plugin-drizzle";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import type {
-  PgArray,
-  PgColumn,
-  PgTable,
-  getTableConfig,
-} from "drizzle-orm/pg-core";
+import type { PgArray, PgColumn, PgTable, getTableConfig } from "drizzle-orm/pg-core";
 import type { RelationalQueryBuilder } from "drizzle-orm/pg-core/query-builders/query";
 import type { GraphQLResolveInfo } from "graphql";
 
@@ -92,14 +83,8 @@ interface QueryDataType {
 
 export class DrizzleGenerator<Types extends SchemaTypes> {
   enums: Record<string, PothosSchemaTypes.EnumRef<Types, unknown>> = {};
-  inputOperators: Record<
-    string,
-    PothosSchemaTypes.InputObjectRef<Types, unknown>
-  > = {};
-  inputType: Record<
-    string,
-    Record<string, PothosSchemaTypes.InputObjectRef<Types, unknown>>
-  > = {};
+  inputOperators: Record<string, PothosSchemaTypes.InputObjectRef<Types, unknown>> = {};
+  inputType: Record<string, Record<string, PothosSchemaTypes.InputObjectRef<Types, unknown>>> = {};
   tables?: Record<string, ModelData>;
 
   builder: PothosSchemaTypes.SchemaBuilder<Types>;
@@ -132,18 +117,12 @@ export class DrizzleGenerator<Types extends SchemaTypes> {
         );
 
         //Operations
-        const operationValue = (
-          modelOptions?.operations ?? allOptions?.operations
-        )?.({ modelName });
-        const operationIncludes = expandOperations(
-          operationValue?.include ?? OperationBasic
-        );
-        const operationExcludes = expandOperations(
-          operationValue?.exclude ?? []
-        );
-        const operations = operationIncludes.filter(
-          (v) => !operationExcludes.includes(v)
-        );
+        const operationValue = (modelOptions?.operations ?? allOptions?.operations)?.({
+          modelName,
+        });
+        const operationIncludes = expandOperations(operationValue?.include ?? OperationBasic);
+        const operationExcludes = expandOperations(operationValue?.exclude ?? []);
+        const operations = operationIncludes.filter((v) => !operationExcludes.includes(v));
         // Columns filter
         const columnValue = (modelOptions?.fields ?? allOptions?.fields)?.({
           modelName,
@@ -157,15 +136,12 @@ export class DrizzleGenerator<Types extends SchemaTypes> {
         const filterColumns = include.filter((name) => !exclude.includes(name));
 
         // Input columns filter
-        const inputFieldValue = (
-          modelOptions?.inputFields ?? allOptions?.inputFields
-        )?.({ modelName });
-        const includeInput =
-          inputFieldValue?.include ?? columns.map((c) => c.name);
+        const inputFieldValue = (modelOptions?.inputFields ?? allOptions?.inputFields)?.({
+          modelName,
+        });
+        const includeInput = inputFieldValue?.include ?? columns.map((c) => c.name);
         const excludeInput = inputFieldValue?.exclude ?? [];
-        const filterInputColumns = includeInput.filter(
-          (name) => !excludeInput.includes(name)
-        );
+        const filterInputColumns = includeInput.filter((name) => !excludeInput.includes(name));
         return [
           modelName,
           {
@@ -175,9 +151,7 @@ export class DrizzleGenerator<Types extends SchemaTypes> {
             filterColumns,
             primaryColumns,
             operations,
-            inputColumns: columns.filter((c) =>
-              filterInputColumns.includes(c.name)
-            ),
+            inputColumns: columns.filter((c) => filterInputColumns.includes(c.name)),
             tableInfo,
             executable: modelOptions?.executable ?? allOptions?.executable,
             limit: modelOptions?.limit ?? allOptions?.limit,
@@ -193,23 +167,17 @@ export class DrizzleGenerator<Types extends SchemaTypes> {
     const include = options?.use?.include ?? modelNames;
     const exclude = options?.use?.exclude ?? [];
     const filterTables = include.filter((name) => !exclude.includes(name));
-    return Object.fromEntries(
-      tables.filter(([name]) => filterTables.includes(name))
-    );
+    return Object.fromEntries(tables.filter(([name]) => filterTables.includes(name)));
   }
   getClient(ctx: object) {
     const options = this.builder.options;
     const drizzleOption = options.drizzle;
     const client =
-      drizzleOption.client instanceof Function
-        ? drizzleOption.client(ctx)
-        : drizzleOption.client;
+      drizzleOption.client instanceof Function ? drizzleOption.client(ctx) : drizzleOption.client;
     return client as NodePgDatabase;
   }
   getQueryTable(ctx: object, modelName: string) {
-    return this.getClient(ctx).query[
-      modelName as never
-    ] as RelationalQueryBuilder<never, never>;
+    return this.getClient(ctx).query[modelName as never] as RelationalQueryBuilder<never, never>;
   }
   getRelations(): AnyRelations {
     const drizzleOption = this.builder.options.drizzle;
@@ -223,9 +191,7 @@ export class DrizzleGenerator<Types extends SchemaTypes> {
     return tables;
   }
   getTable(table: SchemaEntry) {
-    const result = Object.values(this.getTables()).find(
-      (v) => v.table === table
-    );
+    const result = Object.values(this.getTables()).find((v) => v.table === table);
     return result;
   }
   getInputType(
@@ -248,31 +214,23 @@ export class DrizzleGenerator<Types extends SchemaTypes> {
     const relayFields = Object.entries(relations)
       .filter(([, relation]) => relation.through)
       .map(([relationName, relation]) => {
-        const rowInputType = this.getInputType(
-          modelName,
-          `_${relationName}Set`,
-          {
-            fields: (t) =>
-              Object.fromEntries(
-                relation.targetColumns.map((col) => [
-                  col.name,
-                  t.field({
-                    type: this.getDataType(col),
-                    required: col.notNull,
-                  }),
-                ])
-              ),
-          }
-        );
-        const relationInputType = this.getInputType(
-          modelName,
-          `_${relationName}`,
-          {
-            fields: (t) => ({
-              set: t.field({ type: [rowInputType] }),
-            }),
-          }
-        );
+        const rowInputType = this.getInputType(modelName, `_${relationName}Set`, {
+          fields: (t) =>
+            Object.fromEntries(
+              relation.targetColumns.map((col) => [
+                col.name,
+                t.field({
+                  type: this.getDataType(col),
+                  required: col.notNull,
+                }),
+              ])
+            ),
+        });
+        const relationInputType = this.getInputType(modelName, `_${relationName}`, {
+          fields: (t) => ({
+            set: t.field({ type: [rowInputType] }),
+          }),
+        });
 
         return [relationName, relationInputType] as const;
       });
@@ -294,10 +252,7 @@ export class DrizzleGenerator<Types extends SchemaTypes> {
 
         return Object.fromEntries([
           ...dbFields,
-          ...relayFields.map(([name, field]) => [
-            name,
-            t.field({ type: field }),
-          ]),
+          ...relayFields.map(([name, field]) => [name, t.field({ type: field })]),
         ]);
       },
     });
@@ -316,10 +271,7 @@ export class DrizzleGenerator<Types extends SchemaTypes> {
         const relayFields = this.getInputRelation(modelName);
         return Object.fromEntries([
           ...dbFields,
-          ...relayFields.map(([name, field]) => [
-            name,
-            t.field({ type: field }),
-          ]),
+          ...relayFields.map(([name, field]) => [name, t.field({ type: field })]),
         ]);
       },
     });
@@ -377,8 +329,7 @@ export class DrizzleGenerator<Types extends SchemaTypes> {
 
   getInputOperator(type: string | [string]) {
     const typeName = Array.isArray(type) ? `Array${type[0]}` : type;
-    const input =
-      this.inputOperators[typeName] ?? createInputOperator(this.builder, type);
+    const input = this.inputOperators[typeName] ?? createInputOperator(this.builder, type);
     this.inputOperators[typeName] = input;
     return input;
   }
@@ -469,41 +420,27 @@ export const replaceColumnValues = (
   if (columns) {
     queryData.columns = Object.fromEntries(
       Object.entries(tree).flatMap(([name, value]) =>
-        value === true && columns.find((v) => v.name === name)
-          ? [[name, true]]
-          : []
+        value === true && columns.find((v) => v.name === name) ? [[name, true]] : []
       )
     );
   }
   if (queryData.with) {
     Object.entries(queryData.with).forEach(([name, query]) => {
       if (typeof tree[name] === "object") {
-        replaceColumnValues(
-          tables,
-          (query as { _name: string })._name,
-          tree[name],
-          query
-        );
+        replaceColumnValues(tables, (query as { _name: string })._name, tree[name], query);
       }
     });
   }
   return queryData;
 };
 
-export const getReturning = (
-  info: GraphQLResolveInfo,
-  columns: PgColumn[],
-  primary?: boolean
-) => {
+export const getReturning = (info: GraphQLResolveInfo, columns: PgColumn[], primary?: boolean) => {
   const queryFields = getQueryFields(info);
-  const isRelay = Object.keys(queryFields).some(
-    (v) => !columns.find((c) => c.name === v)
-  );
+  const isRelay = Object.keys(queryFields).some((v) => !columns.find((c) => c.name === v));
   const returnFields = columns
     .filter((v) => queryFields[v.name] || (primary && v.primary))
     .map((v) => [v.name, v]);
-  if (!returnFields.length)
-    return { isRelay, queryFields, returning: undefined };
+  if (!returnFields.length) return { isRelay, queryFields, returning: undefined };
   return {
     isRelay,
     queryFields,

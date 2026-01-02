@@ -1,12 +1,7 @@
 import { gql } from "@urql/core";
 import { describe, it, expect } from "vitest";
 import { relations } from "../db/relations";
-import {
-  clearLogs,
-  createClient,
-  filterObject,
-  getLogs,
-} from "../libs/test-tools";
+import { clearLogs, createClient, filterObject, getLogs } from "../libs/test-tools";
 
 export const { app, client, db } = createClient({
   relations,
@@ -112,14 +107,11 @@ describe("Mutation: deletePost (Drizzle v2 Pure Object Syntax)", () => {
     const targetPosts = await db.query.posts.findMany({ limit: 2 });
     const targetIds = targetPosts.map((p) => p.id);
 
-    const result = await client.mutation<{ deletePost: PostResponse[] }>(
-      DELETE_POST_SIMPLE,
-      {
-        where: {
-          id: { in: targetIds },
-        },
-      }
-    );
+    const result = await client.mutation<{ deletePost: PostResponse[] }>(DELETE_POST_SIMPLE, {
+      where: {
+        id: { in: targetIds },
+      },
+    });
 
     const data = result.data?.deletePost;
     if (!data) throw new Error("Batch delete failed");
@@ -139,14 +131,11 @@ describe("Mutation: deletePost (Drizzle v2 Pure Object Syntax)", () => {
     const targetPost = await db.query.posts.findFirst();
     const targetTitle = targetPost?.title;
 
-    const result = await client.mutation<{ deletePost: PostResponse[] }>(
-      DELETE_POST_SIMPLE,
-      {
-        where: {
-          title: { eq: targetTitle },
-        },
-      }
-    );
+    const result = await client.mutation<{ deletePost: PostResponse[] }>(DELETE_POST_SIMPLE, {
+      where: {
+        title: { eq: targetTitle },
+      },
+    });
 
     const data = result.data?.deletePost;
     if (!data || data.length === 0) throw new Error("Delete by title failed");
@@ -164,14 +153,11 @@ describe("Mutation: deletePost (Drizzle v2 Pure Object Syntax)", () => {
   it("should return an empty array when trying to delete a non-existent record", async () => {
     const nonExistentId = "00000000-0000-0000-0000-000000000000";
 
-    const result = await client.mutation<{ deletePost: PostResponse[] }>(
-      DELETE_POST_SIMPLE,
-      {
-        where: {
-          id: { eq: nonExistentId },
-        },
-      }
-    );
+    const result = await client.mutation<{ deletePost: PostResponse[] }>(DELETE_POST_SIMPLE, {
+      where: {
+        id: { eq: nonExistentId },
+      },
+    });
 
     expect(result.data?.deletePost).toHaveLength(0);
   });

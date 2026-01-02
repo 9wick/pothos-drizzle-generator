@@ -1,12 +1,7 @@
 import { gql } from "@urql/core";
 import { describe, it, expect } from "vitest";
 import { relations } from "../db/relations";
-import {
-  clearLogs,
-  createClient,
-  filterObject,
-  getLogs,
-} from "../libs/test-tools";
+import { clearLogs, createClient, filterObject, getLogs } from "../libs/test-tools";
 
 export const { app, client, db } = createClient({
   relations,
@@ -67,15 +62,12 @@ describe("Mutation: updatePost (Drizzle v2 Pure Object Syntax)", () => {
 
     clearLogs(db);
 
-    const result = await client.mutation<{ updatePost: PostResponse[] }>(
-      UPDATE_POST_FULL,
-      {
-        input: { title: "Drizzle v2 Object Title" },
-        where: {
-          id: { eq: targetPost?.id },
-        },
-      }
-    );
+    const result = await client.mutation<{ updatePost: PostResponse[] }>(UPDATE_POST_FULL, {
+      input: { title: "Drizzle v2 Object Title" },
+      where: {
+        id: { eq: targetPost?.id },
+      },
+    });
 
     expect(result.error).toBeUndefined();
     const data = result.data?.updatePost;
@@ -95,18 +87,15 @@ describe("Mutation: updatePost (Drizzle v2 Pure Object Syntax)", () => {
     const targetPost = await db.query.posts.findFirst();
     clearLogs(db);
 
-    const result = await client.mutation<{ updatePost: PostResponse[] }>(
-      UPDATE_POST_FULL,
-      {
-        input: {
-          title: "Updated with Object Syntax",
-          categories: { set: categories.map((c) => ({ id: c.id })) },
-        },
-        where: {
-          id: { eq: targetPost?.id },
-        },
-      }
-    );
+    const result = await client.mutation<{ updatePost: PostResponse[] }>(UPDATE_POST_FULL, {
+      input: {
+        title: "Updated with Object Syntax",
+        categories: { set: categories.map((c) => ({ id: c.id })) },
+      },
+      where: {
+        id: { eq: targetPost?.id },
+      },
+    });
 
     const updatedPost = result.data?.updatePost[0];
     expect(updatedPost?.categories).toHaveLength(categories.length);
@@ -124,16 +113,13 @@ describe("Mutation: updatePost (Drizzle v2 Pure Object Syntax)", () => {
     const targetPost = await db.query.posts.findFirst();
     const newContent = "Updated content via pure object syntax";
 
-    const result = await client.mutation<{ updatePost: PostResponse[] }>(
-      UPDATE_POST_SIMPLE,
-      {
-        input: { content: newContent },
-        where: {
-          id: { eq: targetPost?.id },
-          published: { eq: targetPost?.published },
-        },
-      }
-    );
+    const result = await client.mutation<{ updatePost: PostResponse[] }>(UPDATE_POST_SIMPLE, {
+      input: { content: newContent },
+      where: {
+        id: { eq: targetPost?.id },
+        published: { eq: targetPost?.published },
+      },
+    });
 
     const data = result.data?.updatePost;
     expect(data).toHaveLength(1);
@@ -152,15 +138,12 @@ describe("Mutation: updatePost (Drizzle v2 Pure Object Syntax)", () => {
     const targetPosts = await db.query.posts.findMany({ limit: 2 });
     const commonContent = "Batch update content";
 
-    const result = await client.mutation<{ updatePost: PostResponse[] }>(
-      UPDATE_POST_SIMPLE,
-      {
-        input: { content: commonContent },
-        where: {
-          id: { in: targetPosts.map((p) => p.id) },
-        },
-      }
-    );
+    const result = await client.mutation<{ updatePost: PostResponse[] }>(UPDATE_POST_SIMPLE, {
+      input: { content: commonContent },
+      where: {
+        id: { in: targetPosts.map((p) => p.id) },
+      },
+    });
 
     const data = result.data?.updatePost;
     if (!data) throw new Error("Batch update failed");
@@ -174,15 +157,12 @@ describe("Mutation: updatePost (Drizzle v2 Pure Object Syntax)", () => {
   it("should return an empty array when no record matches the where criteria", async () => {
     const nonExistentId = "00000000-0000-0000-0000-000000000000";
 
-    const result = await client.mutation<{ updatePost: PostResponse[] }>(
-      UPDATE_POST_SIMPLE,
-      {
-        input: { title: "No Match" },
-        where: {
-          id: { eq: nonExistentId },
-        },
-      }
-    );
+    const result = await client.mutation<{ updatePost: PostResponse[] }>(UPDATE_POST_SIMPLE, {
+      input: { title: "No Match" },
+      where: {
+        id: { eq: nonExistentId },
+      },
+    });
 
     expect(Array.isArray(result.data?.updatePost)).toBe(true);
     expect(result.data?.updatePost).toHaveLength(0);

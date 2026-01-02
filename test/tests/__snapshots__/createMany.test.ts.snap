@@ -4,14 +4,14 @@ exports[`Mutation: createManyPost (Drizzle v2 Pure Object Syntax) > should creat
 [
   {
     "__typename": "Post",
-    "authorId": "3e0bb3d0-2074-4a1e-6263-d13dd10cb0cf",
+    "authorId": "3e0bb3d0-2074-4a1e-9263-d13dd10cb0cf",
     "content": "Content 1",
     "published": true,
     "title": "Bulk Post 1",
   },
   {
     "__typename": "Post",
-    "authorId": "3e0bb3d0-2074-4a1e-6263-d13dd10cb0cf",
+    "authorId": "3e0bb3d0-2074-4a1e-9263-d13dd10cb0cf",
     "content": "Content 2",
     "published": false,
     "title": "Bulk Post 2",

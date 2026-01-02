@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-namespace */
 import type { Operation, OperationBasic } from "./libs/operations.js";
 import type { PothosDrizzleGenerator } from "./PothosDrizzleGenerator.js";
 import type { SchemaTypes } from "@pothos/core";
@@ -13,10 +12,7 @@ import type { PgTable, PgUpdateSetSource } from "drizzle-orm/pg-core";
 
 declare global {
   export namespace PothosSchemaTypes {
-    export interface Plugins<
-      Types extends SchemaTypes,
-      T extends object = object
-    > {
+    export interface Plugins<Types extends SchemaTypes, T extends object = object> {
       pothosDrizzleGenerator: PothosDrizzleGenerator<Types, T>;
     }
 
@@ -25,31 +21,24 @@ declare global {
 
     type GetTable<
       Types extends SchemaTypes,
-      U extends TableNames<Types>
+      U extends TableNames<Types>,
     > = Relations<Types>[U]["table"];
 
-    type AnyTable<Types extends SchemaTypes> = GetTable<
-      Types,
-      TableNames<Types>
-    >;
+    type AnyTable<Types extends SchemaTypes> = GetTable<Types, TableNames<Types>>;
 
     type Columns<
       Types extends SchemaTypes,
-      U extends TableNames<Types>
-    > = keyof DBQueryConfigColumns<
-      GetTableViewFieldSelection<GetTable<Types, U>>
-    >;
+      U extends TableNames<Types>,
+    > = keyof DBQueryConfigColumns<GetTableViewFieldSelection<GetTable<Types, U>>>;
 
-    type AnyColumns<Types extends SchemaTypes> = AnyTable<Types> extends infer R
-      ? R extends SchemaEntry
-        ? keyof DBQueryConfigColumns<GetTableViewFieldSelection<R>>
-        : never
-      : never;
+    type AnyColumns<Types extends SchemaTypes> =
+      AnyTable<Types> extends infer R
+        ? R extends SchemaEntry
+          ? keyof DBQueryConfigColumns<GetTableViewFieldSelection<R>>
+          : never
+        : never;
 
-    type ColumnsWithManyRelations<
-      Types extends SchemaTypes,
-      U extends TableNames<Types>
-    > =
+    type ColumnsWithManyRelations<Types extends SchemaTypes, U extends TableNames<Types>> =
       | Columns<Types, U>
       | keyof {
           [K in keyof Relations<Types>[U]["relations"] as Relations<Types>[U]["relations"][K] extends AnyMany
@@ -72,10 +61,7 @@ declare global {
       modelName: U;
     };
 
-    type OperationParams<
-      Types extends SchemaTypes,
-      U extends TableNames<Types>
-    > = {
+    type OperationParams<Types extends SchemaTypes, U extends TableNames<Types>> = {
       ctx: Types["Context"];
       modelName: U;
       operation: (typeof OperationBasic)[number];
@@ -85,13 +71,8 @@ declare global {
       | { include: T[]; exclude?: undefined }
       | { exclude: T[]; include?: undefined };
 
-    type OperationSelection =
-      | { include?: Operation[]; exclude?: Operation[] }
-      | undefined;
+    type OperationSelection = { include?: Operation[]; exclude?: Operation[] } | undefined;
 
-    /**
-     * Drizzle v2 Pure Object Syntax Operators
-     */
     type FilterOperator<T> = {
       eq?: T;
       ne?: T;
@@ -107,9 +88,6 @@ declare global {
       isNotNull?: boolean;
     };
 
-    /**
-     * Drizzle v2 Pure Object Filter structure
-     */
     type FilterObject<T> = {
       [K in keyof T]?: T[K] | FilterOperator<T[K]>;
     } & {
@@ -123,9 +101,6 @@ declare global {
       | RelationsFilter<Relations<Types>[U], Relations<Types>>
       | undefined;
 
-    /**
-     * Represents a union of all possible model filters
-     */
     type AnyWhereReturn<Types extends SchemaTypes> = {
       [U in TableNames<Types>]: WhereReturn<Types, U>;
     }[TableNames<Types>];
@@ -134,13 +109,8 @@ declare global {
       | { [P in ColType]?: "asc" | "desc" }
       | undefined;
 
-    type InputDataReturn<
-      Types extends SchemaTypes,
-      U extends TableNames<Types>
-    > =
-      | (PgUpdateSetSource<
-          GetTable<Types, U> extends PgTable ? GetTable<Types, U> : never
-        > & {
+    type InputDataReturn<Types extends SchemaTypes, U extends TableNames<Types>> =
+      | (PgUpdateSetSource<GetTable<Types, U> extends PgTable ? GetTable<Types, U> : never> & {
           [K in keyof Relations<Types>[U]["relations"] as Relations<Types>[U]["relations"][K] extends AnyMany
             ? K
             : never]?: {
@@ -149,72 +119,46 @@ declare global {
         })
       | undefined;
 
-    interface GlobalModelOptions<Types extends SchemaTypes> {
-      fields?: <U extends TableNames<Types>>(
-        params: ModelParams<Types, U>
-      ) => IncludeExclude<AnyColumnsWithManyRelations<Types>> | undefined;
-      operations?: <U extends TableNames<Types>>(
-        params: ModelParams<Types, U>
-      ) => OperationSelection;
-      inputFields?: <U extends TableNames<Types>>(
-        params: ModelParams<Types, U>
-      ) => IncludeExclude<AnyColumnsWithManyRelations<Types>> | undefined;
-      depthLimit?: <U extends TableNames<Types>>(
-        params: OperationParams<Types, U>
-      ) => number | undefined;
-      executable?: <U extends TableNames<Types>>(
-        params: OperationParams<Types, U>
-      ) => boolean | undefined;
-      limit?: <U extends TableNames<Types>>(
-        params: OperationParams<Types, U>
-      ) => number | undefined;
-      orderBy?: <U extends TableNames<Types>>(
-        params: OperationParams<Types, U>
-      ) => OrderByReturn<AnyColumns<Types>>;
-      /**
-       * Global where filter that can return filters for any model
-       */
-      where?: <U extends TableNames<Types>>(
-        params: OperationParams<Types, U>
-      ) => AnyWhereReturn<Types>;
-      inputData?: <U extends TableNames<Types>>(
-        params: OperationParams<Types, U>
+    export interface ModelOptions<Types extends SchemaTypes, U extends TableNames<Types>> {
+      fields?: <T extends U>(
+        params: ModelParams<Types, T>
       ) =>
-        | PgUpdateSetSource<
-            AnyTable<Types> extends PgTable ? AnyTable<Types> : never
-          >
+        | IncludeExclude<U extends unknown ? ColumnsWithManyRelations<Types, U> : never>
         | undefined;
-    }
 
-    interface SpecificModelOptions<
-      Types extends SchemaTypes,
-      U extends TableNames<Types>
-    > {
-      fields?: (
-        params: ModelParams<Types, U>
-      ) => IncludeExclude<ColumnsWithManyRelations<Types, U>> | undefined;
-      operations?: (params: ModelParams<Types, U>) => OperationSelection;
-      inputFields?: (
-        params: ModelParams<Types, U>
-      ) => IncludeExclude<ColumnsWithManyRelations<Types, U>> | undefined;
-      depthLimit?: (params: OperationParams<Types, U>) => number | undefined;
-      executable?: (params: OperationParams<Types, U>) => boolean | undefined;
-      limit?: (params: OperationParams<Types, U>) => number | undefined;
-      orderBy?: (
-        params: OperationParams<Types, U>
-      ) => OrderByReturn<Columns<Types, U>>;
-      where?: (params: OperationParams<Types, U>) => WhereReturn<Types, U>;
-      inputData?: (
-        params: OperationParams<Types, U>
-      ) => InputDataReturn<Types, U>;
+      operations?: <T extends U>(params: ModelParams<Types, T>) => OperationSelection;
+
+      inputFields?: <T extends U>(
+        params: ModelParams<Types, T>
+      ) =>
+        | IncludeExclude<U extends unknown ? ColumnsWithManyRelations<Types, U> : never>
+        | undefined;
+
+      depthLimit?: <T extends U>(params: OperationParams<Types, T>) => number | undefined;
+
+      executable?: <T extends U>(params: OperationParams<Types, T>) => boolean | undefined;
+
+      limit?: <T extends U>(params: OperationParams<Types, T>) => number | undefined;
+
+      orderBy?: <T extends U>(
+        params: OperationParams<Types, T>
+      ) => U extends unknown ? OrderByReturn<Columns<Types, U>> : never;
+
+      where?: <T extends U>(
+        params: OperationParams<Types, T>
+      ) => U extends unknown ? WhereReturn<Types, U> : never;
+
+      inputData?: <T extends U>(
+        params: OperationParams<Types, T>
+      ) => U extends unknown ? InputDataReturn<Types, U> : never;
     }
 
     export interface SchemaBuilderOptions<Types extends SchemaTypes> {
       pothosDrizzleGenerator?: {
         use?: IncludeExclude<keyof Relations<Types>>;
-        all?: GlobalModelOptions<Types>;
+        all?: ModelOptions<Types, TableNames<Types>>;
         models?: {
-          [U in TableNames<Types>]?: SpecificModelOptions<Types, U>;
+          [U in TableNames<Types>]?: ModelOptions<Types, U>;
         };
       };
     }

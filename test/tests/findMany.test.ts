@@ -21,18 +21,8 @@ const FIND_MANY_POST = gql`
     authorId
   }
 
-  query FindManyPost(
-    $where: PostWhere
-    $orderBy: [PostOrderBy!]
-    $limit: Int
-    $offset: Int
-  ) {
-    findManyPost(
-      where: $where
-      orderBy: $orderBy
-      limit: $limit
-      offset: $offset
-    ) {
+  query FindManyPost($where: PostWhere, $orderBy: [PostOrderBy!], $limit: Int, $offset: Int) {
+    findManyPost(where: $where, orderBy: $orderBy, limit: $limit, offset: $offset) {
       ...post
       author {
         id
@@ -73,15 +63,12 @@ describe("Query: findManyPost (Drizzle v2 Pure Object Syntax)", () => {
 
     if (allPosts.length === 0) throw new Error("No posts found in database");
 
-    const result = await client.query<{ findManyPost: PostResponse[] }>(
-      FIND_MANY_POST,
-      {
-        where: {
-          id: { in: allPosts.map((p) => p.id) },
-        },
-        orderBy: [{ title: "Asc" }],
-      }
-    );
+    const result = await client.query<{ findManyPost: PostResponse[] }>(FIND_MANY_POST, {
+      where: {
+        id: { in: allPosts.map((p) => p.id) },
+      },
+      orderBy: [{ title: "Asc" }],
+    });
 
     expect(result.error).toBeUndefined();
     const data = result.data?.findManyPost;
@@ -94,14 +81,11 @@ describe("Query: findManyPost (Drizzle v2 Pure Object Syntax)", () => {
   });
 
   it("should filter posts by published status using pure object syntax", async () => {
-    const result = await client.query<{ findManyPost: PostResponse[] }>(
-      FIND_MANY_POST,
-      {
-        where: {
-          published: { eq: true },
-        },
-      }
-    );
+    const result = await client.query<{ findManyPost: PostResponse[] }>(FIND_MANY_POST, {
+      where: {
+        published: { eq: true },
+      },
+    });
 
     const data = result.data?.findManyPost;
     if (!data) throw new Error("No data returned");
@@ -113,14 +97,11 @@ describe("Query: findManyPost (Drizzle v2 Pure Object Syntax)", () => {
 
   it("should handle pagination with limit and offset", async () => {
     const limit = 2;
-    const result = await client.query<{ findManyPost: PostResponse[] }>(
-      FIND_MANY_POST,
-      {
-        limit,
-        offset: 0,
-        orderBy: [{ createdAt: "Desc" }],
-      }
-    );
+    const result = await client.query<{ findManyPost: PostResponse[] }>(FIND_MANY_POST, {
+      limit,
+      offset: 0,
+      orderBy: [{ createdAt: "Desc" }],
+    });
 
     expect(result.data?.findManyPost.length).toBeLessThanOrEqual(limit);
   });
@@ -129,35 +110,25 @@ describe("Query: findManyPost (Drizzle v2 Pure Object Syntax)", () => {
     const targetPost = await db.query.posts.findFirst();
     if (!targetPost) throw new Error("Data required");
 
-    const result = await client.query<{ findManyPost: PostResponse[] }>(
-      FIND_MANY_POST,
-      {
-        where: {
-          authorId: { eq: targetPost.authorId },
-          published: { eq: targetPost.published },
-        },
-      }
-    );
+    const result = await client.query<{ findManyPost: PostResponse[] }>(FIND_MANY_POST, {
+      where: {
+        authorId: { eq: targetPost.authorId },
+        published: { eq: targetPost.published },
+      },
+    });
 
     const data = result.data?.findManyPost;
     expect(
-      data?.every(
-        (p) =>
-          p.authorId === targetPost.authorId &&
-          p.published === targetPost.published
-      )
+      data?.every((p) => p.authorId === targetPost.authorId && p.published === targetPost.published)
     ).toBe(true);
   });
 
   it("should return an empty array for non-matching pure object criteria", async () => {
-    const result = await client.query<{ findManyPost: PostResponse[] }>(
-      FIND_MANY_POST,
-      {
-        where: {
-          title: { eq: "NON_EXISTENT_TITLE_UNIQUE_999" },
-        },
-      }
-    );
+    const result = await client.query<{ findManyPost: PostResponse[] }>(FIND_MANY_POST, {
+      where: {
+        title: { eq: "NON_EXISTENT_TITLE_UNIQUE_999" },
+      },
+    });
 
     expect(result.data?.findManyPost).toHaveLength(0);
   });
@@ -166,14 +137,11 @@ describe("Query: findManyPost (Drizzle v2 Pure Object Syntax)", () => {
     const targetPosts = await db.query.posts.findMany({ limit: 2 });
     const targetIds = targetPosts.map((p) => p.id);
 
-    const result = await client.query<{ findManyPost: PostResponse[] }>(
-      FIND_MANY_POST,
-      {
-        where: {
-          id: { in: targetIds },
-        },
-      }
-    );
+    const result = await client.query<{ findManyPost: PostResponse[] }>(FIND_MANY_POST, {
+      where: {
+        id: { in: targetIds },
+      },
+    });
 
     expect(result.data?.findManyPost).toHaveLength(targetIds.length);
     result.data?.findManyPost.forEach((post) => {

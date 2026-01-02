@@ -1,12 +1,7 @@
 import { gql } from "@urql/core";
 import { describe, it, expect } from "vitest";
 import { relations } from "../db/relations";
-import {
-  clearLogs,
-  createClient,
-  filterObject,
-  getLogs,
-} from "../libs/test-tools";
+import { clearLogs, createClient, filterObject, getLogs } from "../libs/test-tools";
 
 export const { app, client, db } = createClient({
   relations,
@@ -70,12 +65,9 @@ describe("Mutation: createManyPost (Drizzle v2 Pure Object Syntax)", () => {
       },
     ];
 
-    const result = await client.mutation<{ createManyPost: PostResponse[] }>(
-      CREATE_MANY_POST,
-      {
-        input,
-      }
-    );
+    const result = await client.mutation<{ createManyPost: PostResponse[] }>(CREATE_MANY_POST, {
+      input,
+    });
     expect(getLogs(db).length).toBe(3);
     expect(result.error).toBeUndefined();
     const data = result.data?.createManyPost;
@@ -86,9 +78,7 @@ describe("Mutation: createManyPost (Drizzle v2 Pure Object Syntax)", () => {
     expect(data).toHaveLength(2);
 
     // スナップショットの検証（IDや日付を除外）
-    expect(
-      data.map((post) => filterObject(post, IGNORED_KEYS))
-    ).toMatchSnapshot();
+    expect(data.map((post) => filterObject(post, IGNORED_KEYS))).toMatchSnapshot();
 
     // DB側に正しく保存されているかオブジェクト形式で検証
     const savedPosts = await db.query.posts.findMany({
@@ -102,12 +92,9 @@ describe("Mutation: createManyPost (Drizzle v2 Pure Object Syntax)", () => {
   // --- 追加テストケース ---
 
   it("should return an empty array when input is an empty list", async () => {
-    const result = await client.mutation<{ createManyPost: PostResponse[] }>(
-      CREATE_MANY_POST,
-      {
-        input: [],
-      }
-    );
+    const result = await client.mutation<{ createManyPost: PostResponse[] }>(CREATE_MANY_POST, {
+      input: [],
+    });
 
     expect(result.error).toBeUndefined();
     expect(result.data?.createManyPost).toHaveLength(0);
@@ -126,12 +113,9 @@ describe("Mutation: createManyPost (Drizzle v2 Pure Object Syntax)", () => {
       },
     ];
 
-    const result = await client.mutation<{ createManyPost: PostResponse[] }>(
-      CREATE_MANY_POST,
-      {
-        input,
-      }
-    );
+    const result = await client.mutation<{ createManyPost: PostResponse[] }>(CREATE_MANY_POST, {
+      input,
+    });
 
     const createdId = result.data?.createManyPost[0].id;
 

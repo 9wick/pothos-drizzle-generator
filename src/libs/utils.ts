@@ -1,10 +1,7 @@
 import * as p from "drizzle-orm";
 import type { GraphQLResolveInfo, FieldNode, SelectionNode } from "graphql";
 
-function getDepthFromSelection(
-  selection: SelectionNode | FieldNode,
-  currentDepth: number
-): number {
+function getDepthFromSelection(selection: SelectionNode | FieldNode, currentDepth: number): number {
   if (selection.kind === "Field" && selection.selectionSet) {
     const childDepths = selection.selectionSet.selections.map((sel) =>
       getDepthFromSelection(sel, currentDepth + 1)
@@ -41,10 +38,7 @@ export const getQueryFragment = (
   }
 };
 
-export const getQueryFields = (
-  info: GraphQLResolveInfo,
-  fieldNodes?: FieldNode[]
-) => {
+export const getQueryFields = (info: GraphQLResolveInfo, fieldNodes?: FieldNode[]) => {
   const selectFields: FieldTree = {};
   for (const fieldNode of fieldNodes ?? info.fieldNodes) {
     if (fieldNode.selectionSet) {
@@ -82,25 +76,18 @@ type OperatorTree =
   | Record<"NOT", OperatorType>
   | OperatorType;
 
-export const createWhereQuery = (
-  table: p.SchemaEntry,
-  tree?: OperatorTree
-): p.SQL | undefined => {
+export const createWhereQuery = (table: p.SchemaEntry, tree?: OperatorTree): p.SQL | undefined => {
   if (!tree) return undefined;
   const result: p.SQL[] = Object.entries(tree)
     .map(([key, value]) => {
       switch (key) {
         case "AND":
           return value.length
-            ? p.and(
-                ...value.map((v: OperatorTree) => createWhereQuery(table, v))
-              )
+            ? p.and(...value.map((v: OperatorTree) => createWhereQuery(table, v)))
             : undefined;
         case "OR":
           return value.length
-            ? p.or(
-                ...value.map((v: OperatorTree) => createWhereQuery(table, v))
-              )
+            ? p.or(...value.map((v: OperatorTree) => createWhereQuery(table, v)))
             : undefined;
         case "NOT": {
           const v = createWhereQuery(table, value);
@@ -111,9 +98,10 @@ export const createWhereQuery = (
         typeof value === "object"
           ? Object.entries(value).map(([k, v]) => {
               const op = OperatorMap[k as keyof typeof OperatorMap];
-              return (
-                op as (column: p.SQL | p.Column, value: unknown) => p.SQL
-              )(p.getColumns(table)[key], v) as p.SQL;
+              return (op as (column: p.SQL | p.Column, value: unknown) => p.SQL)(
+                p.getColumns(table)[key],
+                v
+              ) as p.SQL;
             })
           : [p.eq(p.getColumns(table)[key], value)];
       if (result.length === 1) {
@@ -169,10 +157,7 @@ export const convertAggregationQuery = (query: AggregationQueryType) => {
   const newQuery = aggregation ? { ...q, columns: {} } : query;
   const newWith: Record<string, AggregationQueryType> = query.with
     ? Object.fromEntries(
-        Object.entries(query.with).map(([key, value]) => [
-          key,
-          convertAggregationQuery(value),
-        ])
+        Object.entries(query.with).map(([key, value]) => [key, convertAggregationQuery(value)])
       )
     : query.with;
 

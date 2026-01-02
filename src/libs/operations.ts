@@ -8,10 +8,7 @@ export const OperationMutation = [
   ...OperationUpdate,
   ...OperationDelete,
 ] as const;
-export const OperationBasic = [
-  ...OperationQuery,
-  ...OperationMutation,
-] as const;
+export const OperationBasic = [...OperationQuery, ...OperationMutation] as const;
 export const OperationAll = [
   "find",
   "update",
@@ -28,16 +25,16 @@ export const expandOperations = (operations: readonly Operation[]) => {
     v === "all"
       ? OperationBasic
       : v === "find"
-      ? OperationFind
-      : v === "update"
-      ? OperationUpdate
-      : v === "delete"
-      ? OperationDelete
-      : v === "query"
-      ? OperationQuery
-      : v === "mutation"
-      ? OperationMutation
-      : [v]
+        ? OperationFind
+        : v === "update"
+          ? OperationUpdate
+          : v === "delete"
+            ? OperationDelete
+            : v === "query"
+              ? OperationQuery
+              : v === "mutation"
+                ? OperationMutation
+                : [v]
   );
 };
 

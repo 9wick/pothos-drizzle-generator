@@ -133,10 +133,7 @@ const { client, db } = createClient({
           // isOperation(OperationQuery, ...) を使用
           if (isOperation(OperationQuery, operation)) {
             return {
-              OR: [
-                { authorId: { eq: ctx.get("user")?.id } },
-                { published: { eq: true } },
-              ],
+              OR: [{ authorId: { eq: ctx.get("user")?.id } }, { published: { eq: true } }],
             };
           }
           // isOperation(OperationMutation, ...) を使用
@@ -160,18 +157,12 @@ describe("Authentication and Authorization Tests", () => {
     });
     if (!user) throw new Error("No user found");
 
-    const meBefore = await client.mutation<{ me: UserResponse | null }>(
-      MUTATION_ME,
-      {}
-    );
+    const meBefore = await client.mutation<{ me: UserResponse | null }>(MUTATION_ME, {});
     expect(meBefore.data?.me).toBe(null);
 
     await client.mutation(MUTATION_SIGN_IN, { email: user.email });
 
-    const meAfter = await client.mutation<{ me: UserResponse }>(
-      MUTATION_ME,
-      {}
-    );
+    const meAfter = await client.mutation<{ me: UserResponse }>(MUTATION_ME, {});
     expect(meAfter.data?.me.id).toBe(user.id);
   });
 
@@ -197,9 +188,7 @@ describe("Authentication and Authorization Tests", () => {
       QUERY_FIND_MANY_POST,
       {}
     );
-    expect(userResponse.data?.findManyPost.some((p) => !p.published)).toBe(
-      true
-    );
+    expect(userResponse.data?.findManyPost.some((p) => !p.published)).toBe(true);
   });
 
   it("should restrict createOnePost based on authentication", async () => {
@@ -229,13 +218,10 @@ describe("Authentication and Authorization Tests", () => {
     await client.mutation(MUTATION_SIGN_IN, { email: user1.email });
 
     // 他人の投稿更新を試みる (whereフィルタにより対象0となり空配列が返る)
-    const result = await client.mutation<{ updatePost: PostResponse[] }>(
-      MUTATION_UPDATE_POST,
-      {
-        where: { id: { eq: user2Post.id } },
-        input: { title: "Unauthorized" },
-      }
-    );
+    const result = await client.mutation<{ updatePost: PostResponse[] }>(MUTATION_UPDATE_POST, {
+      where: { id: { eq: user2Post.id } },
+      input: { title: "Unauthorized" },
+    });
     expect(result.data?.updatePost).toHaveLength(0);
   });
 

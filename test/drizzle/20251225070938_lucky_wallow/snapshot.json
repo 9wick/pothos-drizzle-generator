@@ -2,15 +2,10 @@
   "version": "8",
   "dialect": "postgres",
   "id": "976cd357-59a7-4529-8604-adc143c901a5",
-  "prevIds": [
-    "00000000-0000-0000-0000-000000000000"
-  ],
+  "prevIds": ["00000000-0000-0000-0000-000000000000"],
   "ddl": [
     {
-      "values": [
-        "ADMIN",
-        "USER"
-      ],
+      "values": ["ADMIN", "USER"],
       "name": "Role",
       "entityType": "enums",
       "schema": "public"
@@ -301,14 +296,10 @@
     },
     {
       "nameExplicit": false,
-      "columns": [
-        "authorId"
-      ],
+      "columns": ["authorId"],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "name": "Post_authorId_User_id_fkey",
@@ -318,14 +309,10 @@
     },
     {
       "nameExplicit": false,
-      "columns": [
-        "postId"
-      ],
+      "columns": ["postId"],
       "schemaTo": "public",
       "tableTo": "Post",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "name": "PostToCategory_postId_Post_id_fkey",
@@ -335,14 +322,10 @@
     },
     {
       "nameExplicit": false,
-      "columns": [
-        "categoryId"
-      ],
+      "columns": ["categoryId"],
       "schemaTo": "public",
       "tableTo": "Category",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "name": "PostToCategory_categoryId_Category_id_fkey",
@@ -351,10 +334,7 @@
       "table": "PostToCategory"
     },
     {
-      "columns": [
-        "postId",
-        "categoryId"
-      ],
+      "columns": ["postId", "categoryId"],
       "nameExplicit": false,
       "name": "PostToCategory_pkey",
       "entityType": "pks",
@@ -362,9 +342,7 @@
       "table": "PostToCategory"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "Category_pkey",
       "schema": "public",
@@ -372,9 +350,7 @@
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "Post_pkey",
       "schema": "public",
@@ -382,9 +358,7 @@
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "User_pkey",
       "schema": "public",
@@ -393,9 +367,7 @@
     },
     {
       "nameExplicit": false,
-      "columns": [
-        "email"
-      ],
+      "columns": ["email"],
       "nullsNotDistinct": false,
       "name": "User_email_key",
       "schema": "public",

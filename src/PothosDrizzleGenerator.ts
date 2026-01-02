@@ -13,23 +13,13 @@ import {
   replaceColumnValues,
   type ModelData,
 } from "./generator.js";
-import {
-  isOperation,
-  OperationMutation,
-  type OperationBasic,
-} from "./libs/operations.js";
-import {
-  createWhereQuery,
-  getQueryDepth,
-  getQueryFields,
-} from "./libs/utils.js";
+import { isOperation, OperationMutation, type OperationBasic } from "./libs/operations.js";
+import { createWhereQuery, getQueryDepth, getQueryFields } from "./libs/utils.js";
 import type { DrizzleObjectFieldBuilder } from "@pothos/plugin-drizzle";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import type {
-  PgQueryResultHKT,
-  PgTable,
-  PgTransaction,
-} from "drizzle-orm/pg-core";
+import type { PgQueryResultHKT, PgTable } from "drizzle-orm/pg-core";
+import type { PgAsyncRelationalQueryHKT } from "drizzle-orm/pg-core/async/query.js";
+import type { PgAsyncTransaction } from "drizzle-orm/pg-core/async/session.js";
 import type { RelationalQueryBuilder } from "drizzle-orm/pg-core/query-builders/query";
 import type { GraphQLResolveInfo } from "graphql";
 
@@ -43,14 +33,11 @@ type OperationParams = {
 
 export class PothosDrizzleGenerator<
   Types extends SchemaTypes,
-  T extends object = object
+  T extends object = object,
 > extends BasePlugin<Types, T> {
   generator: DrizzleGenerator<Types>;
 
-  constructor(
-    buildCache: BuildCache<Types>,
-    name: keyof PothosSchemaTypes.Plugins<Types>
-  ) {
+  constructor(buildCache: BuildCache<Types>, name: keyof PothosSchemaTypes.Plugins<Types>) {
     super(buildCache, name);
     this.generator = new DrizzleGenerator(this.builder);
   }
@@ -83,15 +70,11 @@ export class PothosDrizzleGenerator<
       fields: (t) => {
         const relayList = filterRelations
           .filter(([name]) => filterColumns.includes(name))
-          .map(([relayName, relay]) =>
-            this.createRelationField(t, relayName, relay, tables)
-          );
+          .map(([relayName, relay]) => this.createRelationField(t, relayName, relay, tables));
 
         const relayCount = filterRelations
           .filter(([name]) => filterColumns.includes(`${name}Count`))
-          .map(([relayName, relay]) =>
-            this.createRelationCountField(t, relayName, relay, tables)
-          );
+          .map(([relayName, relay]) => this.createRelationCountField(t, relayName, relay, tables));
         const columnList = columns
           .filter(({ name }) => filterColumns.includes(name))
           .map((c) => [
@@ -108,11 +91,7 @@ export class PothosDrizzleGenerator<
   }
 
   private createRelationField<Shape>(
-    t: DrizzleObjectFieldBuilder<
-      Types,
-      Types["DrizzleRelations"][string],
-      Shape
-    >,
+    t: DrizzleObjectFieldBuilder<Types, Types["DrizzleRelations"][string], Shape>,
     relayName: string,
     relay: AnyRelation,
     tables: Record<string, ModelData>
@@ -150,7 +129,7 @@ export class PothosDrizzleGenerator<
             targetModelName,
             operation,
             ctx,
-            null, // info is not available here, handled differently or ignored for depth in original
+            null,
             tables[targetModelName]!
           );
 
@@ -160,15 +139,13 @@ export class PothosDrizzleGenerator<
             limit:
               params.limit && args.limit
                 ? Math.min(params.limit, args.limit)
-                : params.limit ?? args.limit,
+                : (params.limit ?? args.limit),
             where: {
               AND: [structuredClone(args.where), params.where].filter((v) => v),
             },
             orderBy:
               args.orderBy && Object.keys(args.orderBy).length
-                ? Object.fromEntries(
-                    args.orderBy.flatMap((v) => Object.entries(v))
-                  )
+                ? Object.fromEntries(args.orderBy.flatMap((v) => Object.entries(v)))
                 : params.orderBy,
           };
         },
@@ -177,11 +154,7 @@ export class PothosDrizzleGenerator<
   }
 
   private createRelationCountField<Shape>(
-    t: DrizzleObjectFieldBuilder<
-      Types,
-      Types["DrizzleRelations"][string],
-      Shape
-    >,
+    t: DrizzleObjectFieldBuilder<Types, Types["DrizzleRelations"][string], Shape>,
     relayName: string,
     relay: AnyRelation,
     tables: Record<string, ModelData>
@@ -237,10 +210,7 @@ export class PothosDrizzleGenerator<
                             )
                           ),
                           createWhereQuery(relay.targetTable, {
-                            AND: [
-                              structuredClone(args.where),
-                              params.where,
-                            ].filter((v) => v),
+                            AND: [structuredClone(args.where), params.where].filter((v) => v),
                           } as never)
                         )
                       );
@@ -309,8 +279,7 @@ export class PothosDrizzleGenerator<
     info: GraphQLResolveInfo | null,
     modelData: ModelData
   ): OperationParams {
-    const { executable, depthLimit, limit, where, orderBy, inputData } =
-      modelData;
+    const { executable, depthLimit, limit, where, orderBy, inputData } = modelData;
 
     if (executable?.({ modelName, ctx, operation }) === false) {
       throw new Error("No permission");
@@ -326,11 +295,7 @@ export class PothosDrizzleGenerator<
         : undefined,
     };
 
-    if (
-      info &&
-      params.depthLimit !== undefined &&
-      getQueryDepth(info) > params.depthLimit
-    ) {
+    if (info && params.depthLimit !== undefined && getQueryDepth(info) > params.depthLimit) {
       throw new Error("Depth limit exceeded");
     }
 
@@ -382,17 +347,13 @@ export class PothosDrizzleGenerator<
                   limit:
                     params.limit && args.limit
                       ? Math.min(params.limit, args.limit)
-                      : params.limit ?? args.limit,
+                      : (params.limit ?? args.limit),
                   where: {
-                    AND: [structuredClone(args.where), params.where].filter(
-                      (v) => v
-                    ),
+                    AND: [structuredClone(args.where), params.where].filter((v) => v),
                   },
                   orderBy:
                     args.orderBy && Object.keys(args.orderBy).length
-                      ? Object.fromEntries(
-                          args.orderBy.flatMap((v) => Object.entries(v))
-                        )
+                      ? Object.fromEntries(args.orderBy.flatMap((v) => Object.entries(v)))
                       : params.orderBy,
                 })
               ) as never
@@ -444,15 +405,11 @@ export class PothosDrizzleGenerator<
                 query({
                   ...args,
                   where: {
-                    AND: [structuredClone(args.where), params.where].filter(
-                      (v) => v
-                    ),
+                    AND: [structuredClone(args.where), params.where].filter((v) => v),
                   },
                   orderBy:
                     args.orderBy && Object.keys(args.orderBy).length
-                      ? Object.fromEntries(
-                          args.orderBy.flatMap((v) => Object.entries(v))
-                        )
+                      ? Object.fromEntries(args.orderBy.flatMap((v) => Object.entries(v)))
                       : params.orderBy,
                 })
               ) as never
@@ -491,18 +448,18 @@ export class PothosDrizzleGenerator<
             );
 
             return (
-              this.generator.getClient(ctx).query[
-                modelName as never
-              ] as RelationalQueryBuilder<never, never>
+              this.generator.getClient(ctx).query[modelName as never] as RelationalQueryBuilder<
+                never,
+                never,
+                PgAsyncRelationalQueryHKT
+              >
             )
               .findFirst({
                 columns: {},
                 extras: { _count: () => sql`count(*) ` },
                 ...args,
                 where: {
-                  AND: [structuredClone(args.where), params.where].filter(
-                    (v) => v
-                  ),
+                  AND: [structuredClone(args.where), params.where].filter((v) => v),
                 },
               } as never)
               .then((v: unknown) => (v as { _count: number })._count);
@@ -543,15 +500,11 @@ export class PothosDrizzleGenerator<
                 columns.some((col) => col.name === key)
               )
             );
-            const relationFieldsInput = Object.entries(combinedInput).filter(
-              ([key]) => columns.every((col) => col.name !== key)
+            const relationFieldsInput = Object.entries(combinedInput).filter(([key]) =>
+              columns.every((col) => col.name !== key)
             );
             const hasRelationInput = relationFieldsInput.length > 0;
-            const { returning, isRelay } = getReturning(
-              info,
-              columns,
-              hasRelationInput
-            );
+            const { returning, isRelay } = getReturning(info, columns, hasRelationInput);
 
             if (!isRelay) {
               query({});
@@ -617,19 +570,11 @@ export class PothosDrizzleGenerator<
               ...params.input,
             }));
             const relationFieldsInputs = combinedInputs.map((v) =>
-              Object.entries(v).filter(([key]) =>
-                columns.every((col) => col.name !== key)
-              )
+              Object.entries(v).filter(([key]) => columns.every((col) => col.name !== key))
             );
 
-            const hasRelationInput = relationFieldsInputs.some(
-              (v) => v.length > 0
-            );
-            const { returning, isRelay } = getReturning(
-              info,
-              columns,
-              hasRelationInput
-            );
+            const hasRelationInput = relationFieldsInputs.some((v) => v.length > 0);
+            const { returning, isRelay } = getReturning(info, columns, hasRelationInput);
 
             if (!isRelay) {
               query({});
@@ -693,15 +638,11 @@ export class PothosDrizzleGenerator<
               modelData
             );
             const combinedInput = { ...args.input, ...params.input };
-            const relationFieldsInput = Object.entries(combinedInput).filter(
-              ([key]) => columns.every((col) => col.name !== key)
+            const relationFieldsInput = Object.entries(combinedInput).filter(([key]) =>
+              columns.every((col) => col.name !== key)
             );
             const hasRelationInput = relationFieldsInput.length > 0;
-            const { returning, isRelay } = getReturning(
-              info,
-              columns,
-              hasRelationInput
-            );
+            const { returning, isRelay } = getReturning(info, columns, hasRelationInput);
 
             if (!isRelay) {
               query({});
@@ -729,9 +670,7 @@ export class PothosDrizzleGenerator<
                     await this.insertRelayValue({
                       results,
                       client: tx,
-                      relationInputs: Array(results.length).fill(
-                        relationFieldsInput
-                      ),
+                      relationInputs: Array(results.length).fill(relationFieldsInput),
                       relations,
                     });
                   }
@@ -750,7 +689,7 @@ export class PothosDrizzleGenerator<
     relations,
   }: {
     results: Record<string, unknown>[];
-    client: PgTransaction<TQueryResult, EmptyRelations>;
+    client: PgAsyncTransaction<TQueryResult, EmptyRelations>;
     relationInputs: [string, unknown][][];
     relations: RelationsRecord;
   }) {
@@ -768,16 +707,10 @@ export class PothosDrizzleGenerator<
         const { throughTable } = relay;
 
         const sourceToThroughMap = Object.fromEntries(
-          relay.sourceColumns.map((v, i) => [
-            v.name,
-            relay.through!.source[i]!._.key,
-          ])
+          relay.sourceColumns.map((v, i) => [v.name, relay.through!.source[i]!._.key])
         );
         const targetToThroughMap = Object.fromEntries(
-          relay.targetColumns.map((v, i) => [
-            v.name,
-            relay.through!.target[i]!._.key,
-          ])
+          relay.targetColumns.map((v, i) => [v.name, relay.through!.target[i]!._.key])
         );
 
         const sourceFilters = relay.sourceColumns.map(
@@ -786,11 +719,7 @@ export class PothosDrizzleGenerator<
         await client
           .delete(throughTable as never)
           .where(
-            and(
-              ...sourceFilters.map(([key, val]) =>
-                eq(relay.throughTable![key as never], val)
-              )
-            )
+            and(...sourceFilters.map(([key, val]) => eq(relay.throughTable![key as never], val)))
           );
 
         const insertRows = itemsToSet.map((item) => {
@@ -807,11 +736,7 @@ export class PothosDrizzleGenerator<
       }
     }
   }
-  private defineDelete(
-    modelName: string,
-    modelData: ModelData,
-    tables: Record<string, ModelData>
-  ) {
+  private defineDelete(modelName: string, modelData: ModelData, tables: Record<string, ModelData>) {
     const { tableInfo, columns, table } = modelData;
     const inputWhere = this.generator.getInputWhere(modelName);
 

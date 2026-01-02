@@ -1,11 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { OperationQuery } from "../../src";
 import { relations } from "../db/relations";
-import {
-  createApp,
-  getGraphqlModels,
-  getGraphqlOperations,
-} from "../libs/test-tools";
+import { createApp, getGraphqlModels, getGraphqlOperations } from "../libs/test-tools";
 
 describe("GraphQL Schema Generation", () => {
   describe("Operation Filtering (Include/Exclude)", () => {
@@ -21,9 +17,7 @@ describe("GraphQL Schema Generation", () => {
         },
       });
       const generatedOperations = getGraphqlOperations(schema);
-      expect(
-        generatedOperations.every((op) => op.startsWith("createMany"))
-      ).toBe(true);
+      expect(generatedOperations.every((op) => op.startsWith("createMany"))).toBe(true);
     });
 
     it("should generate only query operations when 'query' is included", () => {
@@ -38,11 +32,9 @@ describe("GraphQL Schema Generation", () => {
         },
       });
       const generatedOperations = getGraphqlOperations(schema);
-      expect(
-        generatedOperations.every((op) =>
-          OperationQuery.some((q) => op.startsWith(q))
-        )
-      ).toBe(true);
+      expect(generatedOperations.every((op) => OperationQuery.some((q) => op.startsWith(q)))).toBe(
+        true
+      );
     });
 
     it("should exclude all query operations globally when 'query' is excluded in 'all'", () => {
@@ -58,11 +50,9 @@ describe("GraphQL Schema Generation", () => {
       });
       const generatedOperations = getGraphqlOperations(schema);
       expect(generatedOperations).not.toHaveLength(0);
-      expect(
-        generatedOperations.every(
-          (op) => !OperationQuery.some((q) => op.startsWith(q))
-        )
-      ).toBe(true);
+      expect(generatedOperations.every((op) => !OperationQuery.some((q) => op.startsWith(q)))).toBe(
+        true
+      );
     });
 
     it("should exclude query operations only for a specific model (posts)", () => {
@@ -83,14 +73,10 @@ describe("GraphQL Schema Generation", () => {
 
       expect(allOperations).not.toHaveLength(postOperations.length);
       expect(postOperations).not.toHaveLength(0);
-      expect(
-        allOperations.some((op) => OperationQuery.some((q) => op.startsWith(q)))
-      ).toBe(true);
-      expect(
-        postOperations.every(
-          (op) => !OperationQuery.some((q) => op.startsWith(q))
-        )
-      ).toBe(true);
+      expect(allOperations.some((op) => OperationQuery.some((q) => op.startsWith(q)))).toBe(true);
+      expect(postOperations.every((op) => !OperationQuery.some((q) => op.startsWith(q)))).toBe(
+        true
+      );
     });
 
     it("should apply dynamic operation filtering using modelName in the 'all' callback", () => {
@@ -108,11 +94,9 @@ describe("GraphQL Schema Generation", () => {
       const postOperations = allOperations.filter((op) => op.endsWith("Post"));
 
       expect(postOperations).not.toHaveLength(0);
-      expect(
-        postOperations.every(
-          (op) => !OperationQuery.some((q) => op.startsWith(q))
-        )
-      ).toBe(true);
+      expect(postOperations.every((op) => !OperationQuery.some((q) => op.startsWith(q)))).toBe(
+        true
+      );
     });
 
     it("should support a read-only configuration by excluding all mutations", () => {
@@ -130,15 +114,10 @@ describe("GraphQL Schema Generation", () => {
       });
       const generatedOperations = getGraphqlOperations(schema);
       const hasMutation = generatedOperations.some(
-        (op) =>
-          op.startsWith("create") ||
-          op.startsWith("update") ||
-          op.startsWith("delete")
+        (op) => op.startsWith("create") || op.startsWith("update") || op.startsWith("delete")
       );
       expect(hasMutation).toBe(false);
-      expect(generatedOperations.some((op) => op.startsWith("find"))).toBe(
-        true
-      );
+      expect(generatedOperations.some((op) => op.startsWith("find"))).toBe(true);
     });
 
     it("should generate no operations for a model if include is an empty array", () => {
@@ -153,9 +132,7 @@ describe("GraphQL Schema Generation", () => {
             },
           },
         });
-        const postOperations = getGraphqlOperations(schema).filter((op) =>
-          op.endsWith("Post")
-        );
+        const postOperations = getGraphqlOperations(schema).filter((op) => op.endsWith("Post"));
         expect(postOperations).toHaveLength(0);
       } catch (e) {
         expect(e).toMatchObject({

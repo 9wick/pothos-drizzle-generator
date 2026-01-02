@@ -7,7 +7,7 @@ exports[`Query: findManyPost (Drizzle v2 Pure Object Syntax) > should retrieve p
     "__typename": "User",
     "name": "Duron",
   },
-  "authorId": "72a4319b-5442-4aa6-83ee-52dca5b34731",
+  "authorId": "72a4319b-5442-4aa6-b3ee-52dca5b34731",
   "categories": [
     {
       "__typename": "Category",
