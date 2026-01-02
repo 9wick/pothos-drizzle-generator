@@ -1,4 +1,5 @@
 import * as p from "drizzle-orm";
+import type { InputType } from "@pothos/core";
 import type { GraphQLResolveInfo, FieldNode, SelectionNode } from "graphql";
 
 function getDepthFromSelection(
@@ -9,14 +10,13 @@ function getDepthFromSelection(
     const childDepths = selection.selectionSet.selections.map((sel) =>
       getDepthFromSelection(sel, currentDepth + 1)
     );
-    return Math.max(...childDepths);
+    return Math.max(currentDepth, ...childDepths);
   }
   return currentDepth;
 }
 
 export function getQueryDepth(info: GraphQLResolveInfo): number {
-  if (!info.fieldNodes[0]) return 1;
-  return getDepthFromSelection(info.fieldNodes[0], 1);
+  return info.fieldNodes[0] ? getDepthFromSelection(info.fieldNodes[0], 1) : 1;
 }
 
 export interface FieldTree {
@@ -47,7 +47,6 @@ export const getQueryFields = (
   fieldNodes?: FieldNode[]
 ) => {
   const selectFields: FieldTree = {};
-
   for (const fieldNode of fieldNodes ?? info.fieldNodes) {
     if (fieldNode.selectionSet) {
       for (const field of fieldNode.selectionSet.selections) {
