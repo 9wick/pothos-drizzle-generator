@@ -59,6 +59,82 @@ const FIND_FIRST_POST3 = gql`
   }
 `;
 
+const FIND_FIRST_POST4 = gql`
+  fragment category on Category {
+    id
+    name
+    createdAt
+    updatedAt
+  }
+
+  fragment post on Post {
+    id
+    published
+    title
+    content
+    authorId
+    createdAt
+    updatedAt
+    publishedAt
+  }
+  fragment user on User {
+    id
+    email
+    name
+    roles
+    createdAt
+    updatedAt
+  }
+  query FindFirstPost(
+    $offset: Int
+    $where: PostWhere
+    $orderBy: [PostOrderBy!]
+    $authorCountWhere: UserWhere
+    $categoriesCountWhere: CategoryWhere
+    $authorOffset: Int
+    $authorLimit: Int
+    $authorWhere: UserWhere
+    $authorOrderBy: [UserOrderBy!]
+    $categoriesOffset: Int
+    $categoriesLimit: Int
+    $categoriesWhere: CategoryWhere
+    $categoriesOrderBy: [CategoryOrderBy!]
+  ) {
+    findFirstPost(offset: $offset, where: $where, orderBy: $orderBy) {
+      ...post
+      authorCount(where: $authorCountWhere)
+      categoriesCount(where: $categoriesCountWhere)
+      author(
+        offset: $authorOffset
+        limit: $authorLimit
+        where: $authorWhere
+        orderBy: $authorOrderBy
+      ) {
+        ...user
+      }
+      categories(
+        offset: $categoriesOffset
+        limit: $categoriesLimit
+        where: $categoriesWhere
+        orderBy: $categoriesOrderBy
+      ) {
+        ...category
+      }
+    }
+  }
+`;
+
+const FIND_FIRST_POST5 = gql`
+  query FindFirstPost($where: PostWhere, $orderBy: [PostOrderBy!]) {
+    findFirstPost(where: $where, orderBy: $orderBy) {
+      __typename
+      categories {
+        __typename
+      }
+    }
+  }
+`;
+
 interface PostResponse {
   id: string;
   title: string;
@@ -148,6 +224,8 @@ describe("Query: findFirstPost (Drizzle v2 Pure Object Syntax)", () => {
     expect(result.data?.findFirstPost).toBeDefined();
     const result2 = await client.query<{ findFirstPost: PostResponse }>(FIND_FIRST_POST3, {});
     expect(result2.data?.findFirstPost).toBeDefined();
+    const result3 = await client.query<{ findFirstPost: PostResponse }>(FIND_FIRST_POST5, {});
+    expect(result3.data?.findFirstPost.categories).toBeDefined();
   });
 
   it("should return null when no record matches the pure object criteria", async () => {
@@ -175,5 +253,52 @@ describe("Query: findFirstPost (Drizzle v2 Pure Object Syntax)", () => {
 
     expect(result.data?.findFirstPost.authorId).toBe(author.id);
     expect(result.data?.findFirstPost.author.id).toBe(author.id);
+  });
+
+  it("should verify all parameters using FIND_FIRST_POST4", async () => {
+    // 準備: テスト用のデータを取得
+    const post = await db.query.posts.findFirst({
+      with: {
+        author: true,
+        categories: true,
+      },
+    });
+    if (!post) throw new Error("Post required");
+
+    const result = await client.query(FIND_FIRST_POST4, {
+      offset: 0,
+      where: {
+        id: { eq: post.id },
+      },
+      orderBy: [{ createdAt: "Desc" }],
+      authorCountWhere: {
+        id: { isNotNull: true },
+      },
+      categoriesCountWhere: {
+        id: { isNotNull: true },
+      },
+      authorOffset: 0,
+      authorLimit: 1,
+      authorWhere: {
+        id: { eq: post.authorId },
+      },
+      authorOrderBy: [{ name: "Asc" }],
+      categoriesOffset: 0,
+      categoriesLimit: 10,
+      categoriesWhere: {
+        id: { isNotNull: true },
+      },
+      categoriesOrderBy: [{ name: "Asc" }],
+    });
+
+    expect(result.error).toBeUndefined();
+    const data = result.data?.findFirstPost;
+    expect(data).toBeDefined();
+    expect(data.id).toBe(post.id);
+    expect(data.author).toBeDefined();
+    expect(data.author.id).toBe(post.authorId);
+    expect(data.authorCount).toBeGreaterThanOrEqual(0);
+    expect(data.categoriesCount).toBeGreaterThanOrEqual(0);
+    expect(Array.isArray(data.categories)).toBe(true);
   });
 });

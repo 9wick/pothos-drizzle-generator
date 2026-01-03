@@ -5,8 +5,22 @@ exports[`Query: findManyPost (Drizzle v2 Pure Object Syntax) > should retrieve p
   "__typename": "Post",
   "author": {
     "__typename": "User",
+    "email": "proactive_esha@outlook.com",
     "name": "Duron",
+    "roles": [
+      "ADMIN",
+      "ADMIN",
+      "USER",
+      "USER",
+      "USER",
+      "ADMIN",
+      "ADMIN",
+      "USER",
+      "ADMIN",
+      "ADMIN",
+    ],
   },
+  "authorCount": 1,
   "authorId": "72a4319b-5442-4aa6-b3ee-52dca5b34731",
   "categories": [
     {
@@ -14,6 +28,7 @@ exports[`Query: findManyPost (Drizzle v2 Pure Object Syntax) > should retrieve p
       "name": "Lia",
     },
   ],
+  "categoriesCount": 1,
   "content": "HxnMZYUUVi",
   "published": false,
   "title": "BTsJpmtUOPR6c",

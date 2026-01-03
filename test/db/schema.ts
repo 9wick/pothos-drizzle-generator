@@ -39,9 +39,11 @@ export const postsToCategories = pgTable(
   {
     postId: uuid()
       .notNull()
+      .primaryKey()
       .references(() => posts.id, { onDelete: "cascade" }),
     categoryId: uuid()
       .notNull()
+      .primaryKey()
       .references(() => categories.id, { onDelete: "cascade" }),
   },
   (t) => [primaryKey({ columns: [t.postId, t.categoryId] })]

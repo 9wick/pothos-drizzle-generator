@@ -441,11 +441,10 @@ export const getReturning = (info: GraphQLResolveInfo, columns: PgColumn[], prim
     .filter((v) => queryFields[v.name] || (primary && v.primary))
     .map((v) => [v.name, v]);
   if (!returnFields.length) return { isRelay, queryFields, returning: undefined };
+  const returning = Object.fromEntries(returnFields);
   return {
     isRelay,
     queryFields,
-    returning: Object.fromEntries(
-      columns.filter((v) => queryFields[v.name]).map((v) => [v.name, v])
-    ),
+    returning: Object.fromEntries(columns.filter((v) => returning[v.name]).map((v) => [v.name, v])),
   };
 };

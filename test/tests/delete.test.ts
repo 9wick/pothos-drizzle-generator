@@ -1,4 +1,5 @@
 import { gql } from "@urql/core";
+import { isNull } from "drizzle-orm";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { relations } from "../db/relations";
 import { clearLogs, createClient, filterObject, getLogs, getSearchPath } from "../libs/test-tools";
@@ -54,7 +55,13 @@ const DELETE_POST_SIMPLE = gql`
     }
   }
 `;
-
+const DELETE_POST_EMPTY = gql`
+  mutation DeletePost($where: PostWhere) {
+    deletePost(where: $where) {
+      __typename
+    }
+  }
+`;
 interface PostResponse {
   id: string;
   title: string;
@@ -132,6 +139,43 @@ describe("Mutation: deletePost (Drizzle v2 Pure Object Syntax)", () => {
       },
     });
     expect(remainingCount).toHaveLength(0);
+  });
+
+  it("should delete multiple posts using 'in' operator in the where object2", async () => {
+    const targetPosts = await db.query.posts.findMany({ limit: 2 });
+    const targetIds = targetPosts.map((p) => p.id);
+
+    const result = await client.mutation<{ deletePost: PostResponse[] }>(DELETE_POST_EMPTY, {
+      where: {
+        id: { in: targetIds },
+      },
+    });
+
+    const data = result.data?.deletePost;
+    if (!data) throw new Error("Batch delete failed");
+
+    expect(data.length).toBeGreaterThanOrEqual(targetIds.length);
+
+    // DB側で対象が全て削除されているか検証
+    const remainingCount = await db.query.posts.findMany({
+      where: {
+        id: { in: targetIds },
+      },
+    });
+    expect(remainingCount).toHaveLength(0);
+  });
+
+  it("should delete multiple posts using 'in' operator in the where false", async () => {
+    const result = await client.mutation<{ deletePost: PostResponse[] }>(DELETE_POST_EMPTY, {
+      where: {
+        id: { isNull: true },
+      },
+    });
+
+    const data = result.data?.deletePost;
+    if (!data) throw new Error("Batch delete failed");
+
+    expect(data).toHaveLength(0);
   });
 
   it("should handle deletion using non-id unique fields", async () => {

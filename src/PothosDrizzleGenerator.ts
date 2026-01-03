@@ -505,11 +505,9 @@ export class PothosDrizzleGenerator<
             );
             const hasRelationInput = relationFieldsInput.length > 0;
             const { returning, isRelay } = getReturning(info, columns, hasRelationInput);
-
             if (!isRelay) {
               query({});
             }
-
             if (!returning) {
               return client
                 .insert(table as never)
@@ -584,7 +582,7 @@ export class PothosDrizzleGenerator<
               return client
                 .insert(table as never)
                 .values(combinedInputs)
-                .then((v) => Array(v.rowCount ?? 0).fill({}));
+                .then((v) => Array(v.rowCount!).fill({}));
             }
             return client.transaction(async (tx) =>
               tx
@@ -656,7 +654,7 @@ export class PothosDrizzleGenerator<
                 .update(table as never)
                 .set(combinedInput)
                 .where(whereQuery)
-                .then((v) => Array(v.rowCount ?? 0).fill({}));
+                .then((v) => Array(v.rowCount!).fill({}));
             }
 
             return client.transaction(async (tx) =>
@@ -796,7 +794,7 @@ export class PothosDrizzleGenerator<
                   .getClient(ctx)
                   .delete(table as never)
                   .where(whereQuery)
-                  .then((v) => Array(v.rowCount ?? 0).fill({}));
+                  .then((v) => Array(v.rowCount!).fill({}));
           },
         } as never),
       }),

@@ -28,4 +28,4 @@ async function main() {
   });
   await db.$client.end();
 }
-await main();
+main();

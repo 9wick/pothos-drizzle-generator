@@ -1,6 +1,7 @@
 import { gql } from "@urql/core";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { relations } from "../db/relations";
+import { categories } from "../db/schema";
 import { clearLogs, createClient, filterObject, getLogs, getSearchPath } from "../libs/test-tools";
 
 export const { app, client, db } = createClient({
@@ -27,6 +28,23 @@ const CREATE_ONE_POST = gql`
       author {
         id
         name
+      }
+    }
+  }
+`;
+
+const CREATE_ONE_POST_TYPENAME = gql`
+  mutation CreateOnePost($input: PostCreate!) {
+    createOnePost(input: $input) {
+      __typename
+    }
+  }
+`;
+const CREATE_ONE_POST_TYPENAME2 = gql`
+  mutation CreateOnePost($input: PostCreate!) {
+    createOnePost(input: $input) {
+      categories {
+        __typename
       }
     }
   }
@@ -143,5 +161,46 @@ describe("Mutation: createOnePost (Drizzle v2 Pure Object Syntax)", () => {
     });
 
     expect(result.error).toBeDefined();
+  });
+
+  it("should create a post and return only __typename", async () => {
+    const author = await db.query.users.findFirst();
+    if (!author) throw new Error("Author required");
+
+    const result = await client.mutation<{ createOnePost: { __typename: string } }>(
+      CREATE_ONE_POST_TYPENAME,
+      {
+        input: {
+          title: "Only Typename",
+          content: "Content",
+          authorId: author.id,
+          published: false,
+        },
+      }
+    );
+
+    expect(result.error).toBeUndefined();
+    expect(result.data?.createOnePost.__typename).toBe("Post");
+  });
+  it("should create a post and return only relation __typename", async () => {
+    const author = await db.query.users.findFirst();
+    if (!author) throw new Error("Author required");
+    const category = await db.query.categories.findFirst();
+    if (!category) throw new Error("Category required");
+    const result = await client.mutation<{
+      createOnePost: { categories: [{ __typename: string }] };
+    }>(CREATE_ONE_POST_TYPENAME2, {
+      input: {
+        title: "Only Typename",
+        content: "Content",
+        authorId: author.id,
+        published: false,
+        categories: {
+          set: [{ id: category.id }],
+        },
+      },
+    });
+    expect(result.error).toBeUndefined();
+    expect(result.data?.createOnePost.categories[0].__typename).toBe("Category");
   });
 });

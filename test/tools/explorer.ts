@@ -7,6 +7,7 @@ import { onCreateBuilder } from "../libs/test-operations";
 import { createApp } from "../libs/test-tools";
 
 export const { app, schema, db } = createApp({
+  searchPath: "public",
   relations,
   onCreateBuilder,
   pothosDrizzleGenerator: {},

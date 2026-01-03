@@ -4,6 +4,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   resolve: { alias: { graphql: "graphql/index.js" } },
   test: {
+    maxWorkers: "100%",
     include: ["test/tests/*.test.ts"],
     coverage: {
       include: ["src/**/*.{ts,tsx}"],

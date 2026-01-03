@@ -1,6 +1,7 @@
 import { gql } from "@urql/core";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { relations } from "../db/relations";
+import { posts, categories, postsToCategories } from "../db/schema";
 import { createClient, filterObject, getSearchPath } from "../libs/test-tools";
 
 export const { app, client, db } = createClient({
@@ -21,17 +22,55 @@ const FIND_MANY_POST = gql`
     published
     authorId
   }
-
-  query FindManyPost($where: PostWhere, $orderBy: [PostOrderBy!], $limit: Int, $offset: Int) {
-    findManyPost(where: $where, orderBy: $orderBy, limit: $limit, offset: $offset) {
+  fragment user on User {
+    id
+    email
+    name
+    roles
+    createdAt
+    updatedAt
+  }
+  fragment category on Category {
+    id
+    name
+    createdAt
+    updatedAt
+  }
+  query FindManyPost(
+    $offset: Int
+    $limit: Int
+    $where: PostWhere
+    $orderBy: [PostOrderBy!]
+    $authorCountWhere: UserWhere
+    $categoriesCountWhere: CategoryWhere
+    $authorOffset: Int
+    $authorLimit: Int
+    $authorWhere: UserWhere
+    $authorOrderBy: [UserOrderBy!]
+    $categoriesOffset: Int
+    $categoriesLimit: Int
+    $categoriesWhere: CategoryWhere
+    $categoriesOrderBy: [CategoryOrderBy!]
+  ) {
+    findManyPost(offset: $offset, limit: $limit, where: $where, orderBy: $orderBy) {
       ...post
-      author {
-        id
-        name
+      authorCount(where: $authorCountWhere)
+      categoriesCount(where: $categoriesCountWhere)
+      author(
+        offset: $authorOffset
+        limit: $authorLimit
+        where: $authorWhere
+        orderBy: $authorOrderBy
+      ) {
+        ...user
       }
-      categories {
-        id
-        name
+      categories(
+        offset: $categoriesOffset
+        limit: $categoriesLimit
+        where: $categoriesWhere
+        orderBy: $categoriesOrderBy
+      ) {
+        ...category
       }
     }
   }
@@ -172,14 +211,23 @@ describe("findMany - customize", async () => {
           inputData: () => {
             throw new Error("No permission");
           },
+          limit: () => 2,
         },
       },
     });
-    const result = await client.query(FIND_MANY_POST, {
-      postsWhere: {
-        published: { eq: true },
-      },
+    const categories = await db.query.categories.findMany();
+    const posts = await db.query.posts.findMany();
+    await db
+      .insert(postsToCategories)
+      .values(posts.flatMap((p) => categories.map((c) => ({ postId: p.id, categoryId: c.id }))))
+      .onConflictDoNothing();
+    await client.query(FIND_MANY_POST, { limit: 4 }).then((result) => {
+      expect(result.data.findManyPost).toHaveLength(2);
+      expect(result.data.findManyPost[0].categories).toHaveLength(2);
     });
-    expect(result.data.findManyUser).not.toBeNull();
+    await client.query(FIND_MANY_POST, { limit: 1, categoriesLimit: 1 }).then((result) => {
+      expect(result.data.findManyPost).toHaveLength(1);
+      expect(result.data.findManyPost[0].categories).toHaveLength(1);
+    });
   });
 });
