@@ -1,12 +1,18 @@
 import { describe, it, expect } from "vitest";
 import { OperationQuery } from "../../src";
 import { relations } from "../db/relations";
-import { createApp, getGraphqlModels, getGraphqlOperations } from "../libs/test-tools";
+import {
+  createApp,
+  getGraphqlModels,
+  getGraphqlOperations,
+  getSearchPath,
+} from "../libs/test-tools";
 
 describe("GraphQL Schema Generation", () => {
   describe("Operation Filtering (Include/Exclude)", () => {
     it("should generate only createMany operations when explicitly included", () => {
       const { schema } = createApp({
+        searchPath: getSearchPath(import.meta.url),
         relations,
         pothosDrizzleGenerator: {
           all: {
@@ -22,6 +28,7 @@ describe("GraphQL Schema Generation", () => {
 
     it("should generate only query operations when 'query' is included", () => {
       const { schema } = createApp({
+        searchPath: getSearchPath(import.meta.url),
         relations,
         pothosDrizzleGenerator: {
           all: {
@@ -39,6 +46,7 @@ describe("GraphQL Schema Generation", () => {
 
     it("should exclude all query operations globally when 'query' is excluded in 'all'", () => {
       const { schema } = createApp({
+        searchPath: getSearchPath(import.meta.url),
         relations,
         pothosDrizzleGenerator: {
           all: {
@@ -57,6 +65,7 @@ describe("GraphQL Schema Generation", () => {
 
     it("should exclude query operations only for a specific model (posts)", () => {
       const { schema } = createApp({
+        searchPath: getSearchPath(import.meta.url),
         relations,
         pothosDrizzleGenerator: {
           models: {
@@ -81,6 +90,7 @@ describe("GraphQL Schema Generation", () => {
 
     it("should apply dynamic operation filtering using modelName in the 'all' callback", () => {
       const { schema } = createApp({
+        searchPath: getSearchPath(import.meta.url),
         relations,
         pothosDrizzleGenerator: {
           all: {
@@ -101,6 +111,7 @@ describe("GraphQL Schema Generation", () => {
 
     it("should support a read-only configuration by excluding all mutations", () => {
       const { schema } = createApp({
+        searchPath: getSearchPath(import.meta.url),
         relations,
         pothosDrizzleGenerator: {
           all: {
@@ -123,6 +134,7 @@ describe("GraphQL Schema Generation", () => {
     it("should generate no operations for a model if include is an empty array", () => {
       try {
         const { schema } = createApp({
+          searchPath: getSearchPath(import.meta.url),
           relations,
           pothosDrizzleGenerator: {
             models: {
@@ -145,6 +157,7 @@ describe("GraphQL Schema Generation", () => {
   describe("Model Visibility (Use Filter)", () => {
     it("should only expose specific models when using 'include'", () => {
       const { schema } = createApp({
+        searchPath: getSearchPath(import.meta.url),
         relations,
         pothosDrizzleGenerator: {
           use: { include: ["users", "posts"] },
@@ -158,6 +171,7 @@ describe("GraphQL Schema Generation", () => {
 
     it("should hide specific models when using 'exclude'", () => {
       const { schema } = createApp({
+        searchPath: getSearchPath(import.meta.url),
         relations,
         pothosDrizzleGenerator: {
           use: { exclude: ["users", "posts"] },
@@ -173,6 +187,7 @@ describe("GraphQL Schema Generation", () => {
   describe("Field Filtering (Include/Exclude)", () => {
     it("should only include specified fields globally via 'all'", () => {
       const { schema } = createApp({
+        searchPath: getSearchPath(import.meta.url),
         relations,
         pothosDrizzleGenerator: {
           all: {
@@ -192,6 +207,7 @@ describe("GraphQL Schema Generation", () => {
 
     it("should exclude specific fields from a particular model", () => {
       const { schema } = createApp({
+        searchPath: getSearchPath(import.meta.url),
         relations,
         pothosDrizzleGenerator: {
           models: {
@@ -213,6 +229,7 @@ describe("GraphQL Schema Generation", () => {
 
     it("should prioritize model-specific field settings over global 'all' settings", () => {
       const { schema } = createApp({
+        searchPath: getSearchPath(import.meta.url),
         relations,
         pothosDrizzleGenerator: {
           all: {

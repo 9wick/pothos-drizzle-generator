@@ -1,9 +1,10 @@
 import { gql } from "@urql/core";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { relations } from "../db/relations";
-import { createClient } from "../libs/test-tools";
+import { createClient, getSearchPath } from "../libs/test-tools";
 
 export const { app, client, db } = createClient({
+  searchPath: getSearchPath(import.meta.url),
   relations,
   pothosDrizzleGenerator: {},
 });
@@ -72,6 +73,12 @@ interface PostResponse {
 }
 
 describe("Query: findFirstPost (Drizzle v2 Pure Object Syntax)", () => {
+  beforeAll(async () => {
+    await db.resetSchema();
+  });
+  afterAll(async () => {
+    await db.dropSchema();
+  });
   it("should retrieve a first post using object-based where clause", async () => {
     // 準備: テスト用のデータをDBから直接取得 (Drizzle v2 オブジェクト形式)
     const targetPost = await db.query.posts.findFirst({

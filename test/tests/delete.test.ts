@@ -1,9 +1,10 @@
 import { gql } from "@urql/core";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { relations } from "../db/relations";
-import { clearLogs, createClient, filterObject, getLogs } from "../libs/test-tools";
+import { clearLogs, createClient, filterObject, getLogs, getSearchPath } from "../libs/test-tools";
 
 export const { app, client, db } = createClient({
+  searchPath: getSearchPath(import.meta.url),
   relations,
   pothosDrizzleGenerator: {},
 });
@@ -66,6 +67,12 @@ interface PostResponse {
 describe("Mutation: deletePost (Drizzle v2 Pure Object Syntax)", () => {
   const IGNORED_KEYS = ["id", "createdAt", "updatedAt", "publishedAt"];
 
+  beforeAll(async () => {
+    await db.resetSchema();
+  });
+  afterAll(async () => {
+    await db.dropSchema();
+  });
   it("should delete a post and return an array using object-based where clause", async () => {
     // Drizzle v2: 純粋なオブジェクトによる取得 (isNotNullを使用)
     const targetPost = await db.query.posts.findFirst({

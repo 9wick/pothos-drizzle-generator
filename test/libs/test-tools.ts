@@ -7,7 +7,7 @@ import { Client, cacheExchange, fetchExchange } from "@urql/core";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { getTableConfig } from "drizzle-orm/pg-core";
-import { reset, seed } from "drizzle-seed";
+import { seed } from "drizzle-seed";
 import { isObjectType, type GraphQLSchema } from "graphql";
 import { Hono } from "hono";
 import { contextStorage } from "hono/context-storage";
@@ -60,8 +60,10 @@ export const createDB = <TRelations extends TablesRelationalConfig>({
       await seed(tx, schema);
     });
   };
-  (db as typeof db & { _logs: typeof logs })._logs = logs;
-  return { resetSchema, db: db as typeof db & { _logs: typeof logs } };
+  const dropSchema = async () => {
+    await db.execute(`drop schema ${searchPath} cascade`).catch(() => {});
+  };
+  return { resetSchema, db: Object.assign(db, { _logs: logs, resetSchema, dropSchema }) };
 };
 
 export const clearLogs = (db: ReturnType<typeof createDB>["db"]) => {
@@ -94,7 +96,7 @@ export const createBuilder = <TRelations extends AnyRelations = EmptyRelations>(
     >
   ) => void;
 }) => {
-  const { resetSchema, db } = createDB({ relations, searchPath });
+  const { db } = createDB({ relations, searchPath });
   const builder = new SchemaBuilder<{
     DrizzleRelations: TRelations;
     Context: HonoContext<Context>;
@@ -107,7 +109,7 @@ export const createBuilder = <TRelations extends AnyRelations = EmptyRelations>(
     pothosDrizzleGenerator,
   });
   onCreateBuilder?.(builder);
-  return { resetSchema, db, builder };
+  return { db, builder };
 };
 
 export const createApp = <TRelations extends AnyRelations = EmptyRelations>({
@@ -133,7 +135,7 @@ export const createApp = <TRelations extends AnyRelations = EmptyRelations>({
     >
   ) => void;
 }) => {
-  const { builder, resetSchema, db } = createBuilder({
+  const { builder, db } = createBuilder({
     searchPath,
     relations,
     pothosDrizzleGenerator,
@@ -162,7 +164,6 @@ export const createApp = <TRelations extends AnyRelations = EmptyRelations>({
   return {
     app,
     schema,
-    resetSchema,
     db,
   };
 };
@@ -190,7 +191,7 @@ export const createClient = <TRelations extends AnyRelations = EmptyRelations>({
     >
   ) => void;
 }) => {
-  const { app, db, resetSchema, schema } = createApp({
+  const { app, db, schema } = createApp({
     searchPath,
     relations,
     pothosDrizzleGenerator,
@@ -216,7 +217,7 @@ export const createClient = <TRelations extends AnyRelations = EmptyRelations>({
     requestPolicy: "network-only",
     preferGetMethod: false,
   });
-  return { app, client, db, resetSchema, schema };
+  return { app, client, db, schema };
 };
 
 export function filterObject(obj: object, keys: string[]): object {

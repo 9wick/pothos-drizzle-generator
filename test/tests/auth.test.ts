@@ -1,5 +1,5 @@
 import { gql } from "@urql/core";
-import { describe, it, expect, afterEach, beforeAll } from "vitest";
+import { describe, it, expect, afterEach, beforeAll, afterAll } from "vitest";
 import { isOperation, OperationMutation, OperationQuery } from "../../src";
 import { relations } from "../db/relations";
 import { onCreateBuilder } from "../libs/test-operations";
@@ -105,7 +105,7 @@ interface PostResponse {
   authorId: string;
 }
 
-const { client, db, resetSchema } = createClient({
+const { client, db } = createClient({
   searchPath: getSearchPath(import.meta.url),
   onCreateBuilder,
   relations,
@@ -149,7 +149,10 @@ const { client, db, resetSchema } = createClient({
 
 describe("Authentication and Authorization Tests", () => {
   beforeAll(async () => {
-    await resetSchema();
+    await db.resetSchema();
+  });
+  afterAll(async () => {
+    await db.dropSchema();
   });
   afterEach(async () => {
     await client.mutation(MUTATION_SIGN_OUT, {});
