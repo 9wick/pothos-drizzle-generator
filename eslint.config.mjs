@@ -38,7 +38,7 @@ export default [
         },
       ],
       "prettier/prettier": [
-        "warn",
+        0,
         {
           semi: true,
           singleQuote: false,

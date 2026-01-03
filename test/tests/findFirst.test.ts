@@ -35,6 +35,29 @@ const FIND_FIRST_POST = gql`
   }
 `;
 
+const FIND_FIRST_POST2 = gql`
+  query FindFirstPost($where: PostWhere, $orderBy: [PostOrderBy!]) {
+    findFirstPost(where: $where, orderBy: $orderBy) {
+      author {
+        id
+        name
+      }
+      categories {
+        id
+        name
+      }
+    }
+  }
+`;
+
+const FIND_FIRST_POST3 = gql`
+  query FindFirstPost($where: PostWhere, $orderBy: [PostOrderBy!]) {
+    findFirstPost(where: $where, orderBy: $orderBy) {
+      __typename
+    }
+  }
+`;
+
 interface PostResponse {
   id: string;
   title: string;
@@ -111,6 +134,13 @@ describe("Query: findFirstPost (Drizzle v2 Pure Object Syntax)", () => {
     });
 
     expect(result.data?.findFirstPost.id).toBe(targetPost.id);
+  });
+
+  it("empty fields", async () => {
+    const result = await client.query<{ findFirstPost: PostResponse }>(FIND_FIRST_POST2, {});
+    expect(result.data?.findFirstPost).toBeDefined();
+    const result2 = await client.query<{ findFirstPost: PostResponse }>(FIND_FIRST_POST3, {});
+    expect(result2.data?.findFirstPost).toBeDefined();
   });
 
   it("should return null when no record matches the pure object criteria", async () => {

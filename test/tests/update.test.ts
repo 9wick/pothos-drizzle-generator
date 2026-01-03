@@ -41,6 +41,14 @@ const UPDATE_POST_SIMPLE = gql`
   }
 `;
 
+const UPDATE_POST_EMPTY = gql`
+  mutation UpdatePost($input: PostUpdate!, $where: PostWhere) {
+    updatePost(input: $input, where: $where) {
+      __typename
+    }
+  }
+`;
+
 interface PostResponse {
   id: string;
   title: string;
@@ -152,6 +160,23 @@ describe("Mutation: updatePost (Drizzle v2 Pure Object Syntax)", () => {
     data.forEach((post) => {
       expect(targetPosts.map((p) => p.id)).toContain(post.id);
     });
+  });
+
+  it("return empty", async () => {
+    const targetPosts = await db.query.posts.findMany({ limit: 2 });
+    const commonContent = "Batch update content";
+
+    const result = await client.mutation<{ updatePost: PostResponse[] }>(UPDATE_POST_EMPTY, {
+      input: { content: commonContent },
+      where: {
+        id: { in: targetPosts.map((p) => p.id) },
+      },
+    });
+
+    const data = result.data?.updatePost;
+    if (!data) throw new Error("Batch update failed");
+
+    expect(data.length).toBeGreaterThanOrEqual(targetPosts.length);
   });
 
   it("should return an empty array when no record matches the where criteria", async () => {

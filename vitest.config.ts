@@ -10,7 +10,7 @@ export default defineConfig({
     coverage: {
       include: ["src/**/*.{ts,tsx}"],
       exclude: ["src/global-types.ts"],
-      reporter: ["text"],
+      reporter: ["text", "html"],
       reportsDirectory: "./test/coverage",
     },
   },

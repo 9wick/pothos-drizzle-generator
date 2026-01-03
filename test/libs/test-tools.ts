@@ -89,7 +89,6 @@ export const createBuilder = <TRelations extends AnyRelations = EmptyRelations>(
     plugins: [DrizzlePlugin, PothosDrizzleGeneratorPlugin],
     drizzle: {
       client: db,
-      relations,
       getTableConfig,
     },
     pothosDrizzleGenerator,
