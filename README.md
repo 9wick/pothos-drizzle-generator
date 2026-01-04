@@ -37,6 +37,7 @@ pnpm add pothos-drizzle-generator @pothos/core @pothos/plugin-drizzle drizzle-or
 # or
 yarn add pothos-drizzle-generator @pothos/core @pothos/plugin-drizzle drizzle-orm graphql
 
+
 ```
 
 ## ⚡ Quick Start
@@ -111,6 +112,7 @@ pothosDrizzleGenerator: {
   use: { exclude: ["users_to_groups", "audit_logs"] },
 }
 
+
 ```
 
 ### 2. Global Defaults (`all`)
@@ -132,6 +134,7 @@ pothosDrizzleGenerator: {
   }
 }
 
+
 ```
 
 ### 3. Model Overrides (`models`)
@@ -149,6 +152,7 @@ pothosDrizzleGenerator: {
     }
   }
 }
+
 
 ```
 
@@ -168,11 +172,54 @@ The following options are available within both `all` and `models`. The **Expect
 | `orderBy`     | Defines the default sort order.                                          | `{ ctx, modelName, operation }` | `{ [column]: 'asc' \| 'desc' }`                                          |
 | `inputData`   | Injects server-side values (e.g., `userId`) into Mutations.              | `{ ctx, modelName, operation }` | `Object` (matching the model input)                                      |
 
+### 5. Helper Functions & Constants
+
+To simplify logic within your configuration callbacks (like `executable`, `where`, etc.), the package exports helper functions and constants for categorizing operations.
+
+```ts
+import { isOperation } from "pothos-drizzle-generator";
+```
+
+#### `isOperation(group, currentOperation)`
+
+Checks if the current operation belongs to a specific group or category. This is cleaner than manually checking arrays of strings.
+
+```ts
+pothosDrizzleGenerator: {
+  all: {
+    // Example: Require authentication for any mutation (Create/Update/Delete)
+    executable: ({ ctx, operation }) => {
+      if (isOperation("mutation", operation)) {
+        return !!ctx.user;
+      }
+      return true;
+    },
+  },
+}
+
+```
+
+#### Operation Categories
+
+The following constants can be used with `isOperation` or imported directly to reference groups of operations.
+
+| Constant            | String     | Included Operations                           |
+| ------------------- | ---------- | --------------------------------------------- |
+| `OperationFind`     | `find`     | `findFirst`, `findMany`                       |
+| `OperationQuery`    | `query`    | `findFirst`, `findMany`, `count`              |
+| `OperationCreate`   | `create`   | `createOne`, `createMany`                     |
+| `OperationUpdate`   | `update`   | `update`                                      |
+| `OperationDelete`   | `delete`   | `delete`                                      |
+| `OperationMutation` | `mutation` | `createOne`, `createMany`, `update`, `delete` |
+| `OperationAll`      | `all`      | ...all                                        |
+
 ## 🛡️ Comprehensive Example
 
 Below is a complete example showing how `use`, `all`, and `models` work together to create a secure, production-ready schema.
 
 ```ts
+import { isOperation } from "pothos-drizzle-generator";
+
 const builder = new SchemaBuilder<PothosTypes>({
   plugins: [DrizzlePlugin, PothosDrizzleGeneratorPlugin],
   drizzle: {
@@ -187,11 +234,7 @@ const builder = new SchemaBuilder<PothosTypes>({
     all: {
       // Security: Read-only by default. Writes require login.
       executable: ({ ctx, operation }) => {
-        if (
-          operation.startsWith("create") ||
-          operation.startsWith("update") ||
-          operation.startsWith("delete")
-        ) {
+        if (isOperation("mutation", operation)) {
           return !!ctx.user;
         }
         return true;
@@ -233,13 +276,13 @@ const builder = new SchemaBuilder<PothosTypes>({
 
         // Complex Filter: Public posts OR my own posts
         where: ({ ctx, operation }) => {
-          if (operation === "findMany" || operation === "findFirst") {
+          if (isOperation("find", operation)) {
             return {
               OR: [{ published: true }, { authorId: { eq: ctx.user?.id } }],
             };
           }
           // Only update/delete own posts
-          if (operation === "update" || operation === "delete") {
+          if (isOperation(["update", "delete"], operation)) {
             return { authorId: ctx.user?.id };
           }
         },
@@ -252,6 +295,247 @@ const builder = new SchemaBuilder<PothosTypes>({
     },
   },
 });
+```
+
+## Examples of Using the Generated GraphQL
+
+### findMany
+
+- GraphQL
+
+Data retrieval via relations can be easily performed.
+
+```graphql
+query FindManyPost(
+  $offset: Int
+  $limit: Int
+  $where: PostWhere
+  $orderBy: [PostOrderBy!]
+  $authorCountWhere: UserWhere
+  $categoriesCountWhere: CategoryWhere
+  $authorOffset: Int
+  $authorLimit: Int
+  $authorWhere: UserWhere
+  $authorOrderBy: [UserOrderBy!]
+  $categoriesOffset: Int
+  $categoriesLimit: Int
+  $categoriesWhere: CategoryWhere
+  $categoriesOrderBy: [CategoryOrderBy!]
+) {
+  findManyPost(offset: $offset, limit: $limit, where: $where, orderBy: $orderBy) {
+    ...post
+    authorCount(where: $authorCountWhere)
+    categoriesCount(where: $categoriesCountWhere)
+    author(
+      offset: $authorOffset
+      limit: $authorLimit
+      where: $authorWhere
+      orderBy: $authorOrderBy
+    ) {
+      ...user
+    }
+    categories(
+      offset: $categoriesOffset
+      limit: $categoriesLimit
+      where: $categoriesWhere
+      orderBy: $categoriesOrderBy
+    ) {
+      ...category
+    }
+  }
+}
+```
+
+- Output SQL
+
+Queries are consolidated into a single query without triggering N+1.
+
+```sql
+ select
+  "d0"."id" as "id",
+  "d0"."published" as "published",
+  "d0"."title" as "title",
+  "d0"."content" as "content",
+  "d0"."authorId" as "authorId",
+  "d0"."createdAt" as "createdAt",
+  "d0"."updatedAt" as "updatedAt",
+  "d0"."publishedAt" as "publishedAt",
+  "author"."r" as "author",
+  "categories"."r" as "categories",
+  (
+    (
+      select
+        count(*)
+      from
+        "User"
+      where
+        "User"."id" = "d0"."authorId"
+    )
+  ) as "_author_count",
+  (
+    select
+      count(*)
+    from
+      "Category"
+      left join "PostToCategory" on "PostToCategory"."categoryId" = "Category"."id"
+    where
+      "PostToCategory"."postId" = "d0"."id"
+  ) as "categoriesCount"
+from
+  "Post" as "d0"
+  left join lateral (
+    select
+      row_to_json("t".*) "r"
+    from
+      (
+        select
+          "d1"."id" as "id",
+          "d1"."email" as "email",
+          "d1"."name" as "name",
+          "d1"."roles" as "roles",
+          "d1"."createdAt" as "createdAt",
+          "d1"."updatedAt" as "updatedAt"
+        from
+          "User" as "d1"
+        where
+          "d0"."authorId" = "d1"."id"
+        limit
+          $1
+      ) as "t"
+  ) as "author" on true
+  left join lateral (
+    select
+      coalesce(json_agg(row_to_json("t".*)), '[]') as "r"
+    from
+      (
+        select
+          "d1"."id" as "id",
+          "d1"."name" as "name",
+          "d1"."createdAt" as "createdAt",
+          "d1"."updatedAt" as "updatedAt"
+        from
+          "Category" as "d1"
+          inner join "PostToCategory" as "tr0" on "tr0"."categoryId" = "d1"."id"
+        where
+          "d0"."id" = "tr0"."postId"
+      ) as "t"
+  ) as "categories" on true
+where
+  "d0"."published" = $2
+```
+
+### create
+
+- GraphQL
+
+You can create ManyToMany data simultaneously.
+
+```graphql
+mutation Mutation($input: PostCreate!) {
+  createOnePost(input: $input) {
+    ...post
+    categories {
+      ...category
+    }
+  }
+}
+```
+
+```json
+{
+  "input": {
+    "title": "test",
+    "published": true,
+    "content": "test-content",
+    "categories": {
+      "set": [
+        {
+          "id": "663f796b-7ec0-4cda-8484-af8fe4197463"
+        },
+        {
+          "id": "e5c86702-aaaf-4c55-a938-c3d922c0ffe2"
+        }
+      ]
+    }
+  }
+}
+```
+
+- Output SQL
+
+A transaction for data insertion will be generated.
+
+```sql
+begin;
+insert into
+    "Post" (
+      "id",
+      "published",
+      "title",
+      "content",
+      "authorId",
+      "createdAt",
+      "updatedAt",
+      "publishedAt"
+    )
+  values
+    (
+      default,
+      $1,
+      $2,
+      $3,
+      $4,
+      default,
+      default,
+      default
+    )
+  returning
+    "id",
+    "published",
+    "title",
+    "content",
+    "authorId",
+    "createdAt",
+    "updatedAt",
+    "publishedAt";
+delete from "PostToCategory"
+  where
+    "PostToCategory"."postId" = $1;
+insert into
+    "PostToCategory" ("postId", "categoryId")
+  values
+    ($1, $2),
+    ($3, $4);
+commit;
+select
+    "d0"."id" as "id",
+    "d0"."published" as "published",
+    "d0"."title" as "title",
+    "d0"."content" as "content",
+    "d0"."authorId" as "authorId",
+    "d0"."createdAt" as "createdAt",
+    "d0"."updatedAt" as "updatedAt",
+    "d0"."publishedAt" as "publishedAt",
+    "categories"."r" as "categories"
+  from
+    "Post" as "d0"
+    left join lateral (
+      select
+        coalesce(json_agg(row_to_json("t".*)), '[]') as "r"
+      from
+        (
+          select
+            "d1"."id" as "id",
+            "d1"."name" as "name",
+            "d1"."createdAt" as "createdAt",
+            "d1"."updatedAt" as "updatedAt"
+          from
+            "Category" as "d1"
+            inner join "PostToCategory" as "tr0" on "tr0"."categoryId" = "d1"."id"
+          where
+            "d0"."id" = "tr0"."postId"
+        ) as "t"
+    ) as "categories" on true
 ```
 
 ## 🔍 Supported Features
