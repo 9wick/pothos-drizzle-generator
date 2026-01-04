@@ -1,28 +1,32 @@
 # pothos-drizzle-generator
 
-[![](https://img.shields.io/npm/l/pothos-drizzle-generator)](https://www.npmjs.com/package/pothos-drizzle-generator)
-[![](https://img.shields.io/npm/v/pothos-drizzle-generator)](https://www.npmjs.com/package/pothos-drizzle-generator)
-[![](https://img.shields.io/npm/dw/pothos-drizzle-generator)](https://www.npmjs.com/package/pothos-drizzle-generator)
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/node-libraries/pothos-drizzle-generator)
-
-A powerful Pothos plugin that automatically generates a complete GraphQL schema (Query & Mutation) based on your Drizzle ORM schema definition.
+**Pothos Drizzle Generator** is a powerful Pothos plugin that automatically generates a complete GraphQL schema (Query & Mutation) based on your Drizzle ORM schema definition.
 
 It eliminates boilerplate by creating types, input objects, and resolvers for standard CRUD operations while offering granular control over permissions, filtering, and field visibility.
 
 ![](./documents/image.png)
 
-## Sample Repository
+## 🚀 Features
+
+- **Automated CRUD**: Generates `findMany`, `findFirst`, `create`, `update`, and `delete` operations.
+- **Type Safety**: Fully typed inputs and outputs based on your Drizzle schema.
+- **Rich Filtering**: Built-in support for complex filtering (`AND`, `OR`, `gt`, `contains`, etc.).
+- **Granular Control**: Configure visibility and permissions globally or per model.
+- **Join Table Handling**: Easily exclude or customize join tables.
+
+## 🔗 Sample Repository
 
 Check out the sample implementation here:
-https://github.com/SoraKumo001/pothos-drizzle-generator-sample
 
-## Requirements
+[https://github.com/SoraKumo001/pothos-drizzle-generator-sample](https://github.com/SoraKumo001/pothos-drizzle-generator-sample)
+
+## 📦 Requirements
 
 - **drizzle-orm**: `v1.0.0-beta.8` or higher
 - **@pothos/core**: `v4.0.0` or higher
 - **@pothos/plugin-drizzle**: `v0.16.0` or higher
 
-## Installation
+## 📥 Installation
 
 Install the generator alongside Pothos and Drizzle dependencies:
 
@@ -35,7 +39,7 @@ yarn add pothos-drizzle-generator @pothos/core @pothos/plugin-drizzle drizzle-or
 
 ```
 
-## Quick Start
+## ⚡ Quick Start
 
 ### 1. Setup Drizzle and Pothos
 
@@ -60,7 +64,7 @@ const db = drizzle({
 // 2. Define Types
 export interface PothosTypes {
   DrizzleRelations: typeof relations;
-  Context: { userId?: string }; // Example context
+  Context: { userId?: string };
 }
 
 // 3. Initialize Builder
@@ -75,68 +79,98 @@ const builder = new SchemaBuilder<PothosTypes>({
     getTableConfig,
   },
   // 4. Configure Generator
-  pothosDrizzleGenerator: {},
+  pothosDrizzleGenerator: {
+    // Configuration goes here (see below)
+  },
 });
 
 // 5. Generate Schema
 const schema = builder.toSchema();
 ```
 
-## Configuration Guide
+## ⚙️ Configuration Guide
 
-The `pothosDrizzleGenerator` option allows you to control exactly how the schema is generated. You can apply settings globally via `all` or target specific tables via `models`.
+The `pothosDrizzleGenerator` option gives you full control over how your schema is generated. The configuration is applied in three layers:
 
-### 1. Configuration
+1. **Selection (`use`)**: Which tables to include.
+2. **Global Defaults (`all`)**: Rules applied to every model.
+3. **Model Overrides (`models`)**: Rules for specific models.
+
+### 1. Table Selection (`use`)
+
+By default, the generator creates types for **all** tables defined in your `relations`. You can use the `use` option to explicitly include or exclude specific tables.
+
+This is particularly useful for hiding join tables (many-to-many) or internal tables.
 
 ```ts
-{
-  pothosDrizzleGenerator: {
-    all: {
-       ...ModelOptions
+pothosDrizzleGenerator: {
+  // Option A: Allow list (Only generate these tables)
+  use: { include: ["users", "posts", "comments"] },
+
+  // Option B: Block list (Generate everything EXCEPT these)
+  use: { exclude: ["users_to_groups", "audit_logs"] },
+}
+
+```
+
+### 2. Global Defaults (`all`)
+
+The `all` option applies settings to **every model**. It is the best place to define your baseline security rules, default limits, and standard field visibility.
+
+```ts
+pothosDrizzleGenerator: {
+  all: {
+    // Example: Require authentication for all write operations
+    executable: ({ ctx, operation }) => {
+       if (['create', 'update', 'delete'].includes(operation)) {
+         return !!ctx.userId;
+       }
+       return true;
+    },
+    // Example: Default limit for queries
+    limit: () => 50,
+  }
+}
+
+```
+
+### 3. Model Overrides (`models`)
+
+The `models` option allows you to target specific tables by their name. Settings defined here **override** the global settings in `all`.
+
+```ts
+pothosDrizzleGenerator: {
+  models: {
+    users: {
+      // Users can only see their own profile
+      where: ({ ctx }) => ({ id: { eq: ctx.userId } }),
+      // Disable deletion for users
+      operations: () => ({ exclude: ["delete"] })
     }
   }
 }
+
 ```
 
-The `all` option applies settings to **every model** in your Drizzle schema. It is the best place to define your baseline security rules, default limits, and standard field visibility.
+### 4. API Reference
 
-| Property      | Description                                                                             | Callback Arguments              |
-| ------------- | --------------------------------------------------------------------------------------- | ------------------------------- |
-| `executable`  | Determines if an operation is allowed. Return `false` to throw a "No permission" error. | `{ ctx, modelName, operation }` |
-| `fields`      | Controls which fields are exposed in the API. Use `include` or `exclude`.               | `{ modelName }`                 |
-| `inputFields` | Controls which fields are accepted as input for Mutations.                              | `{ modelName }`                 |
-| `operations`  | Specifies which CRUD operations (`findMany`, `create`, etc.) to generate.               | `{ modelName }`                 |
-| `depthLimit`  | Limits query nesting depth to prevent performance issues.                               | `{ ctx, modelName, operation }` |
-| `limit`       | Sets the default maximum number of records for `findMany` queries.                      | `{ ctx, modelName, operation }` |
-| `orderBy`     | Defines the default sort order.                                                         | `{ ctx, modelName, operation }` |
-| `where`       | Applies mandatory filters (e.g., for soft deletes or multi-tenancy).                    | `{ ctx, modelName, operation }` |
-| `inputData`   | Injects server-side values (e.g., `userId`) into Mutations.                             | `{ ctx, modelName, operation }` |
+The following options are available within both `all` and `models`. The **Expected Return** column indicates the type of data your callback function should return.
 
-### 2. Model-Specific Configuration (`models`)
+| Property      | Description                                                              | Callback Arguments              | Expected Return (If undefined is returned, the default behavior applies) |
+| ------------- | ------------------------------------------------------------------------ | ------------------------------- | ------------------------------------------------------------------------ |
+| `executable`  | Determines if an operation is allowed. Return `false` to throw an error. | `{ ctx, modelName, operation }` | `boolean`                                                                |
+| `fields`      | Controls which fields are exposed in the Type.                           | `{ modelName }`                 | `{ include?: string[], exclude?: string[] }`                             |
+| `inputFields` | Controls which fields are exposed in Input types (Create/Update).        | `{ modelName }`                 | `{ include?: string[], exclude?: string[] }`                             |
+| `operations`  | Specifies which CRUD operations to generate.                             | `{ modelName }`                 | `{ include?: string[], exclude?: string[] }`                             |
+| `where`       | Applies mandatory filters (e.g., for multi-tenancy or soft deletes).     | `{ ctx, modelName, operation }` | `FilterObject` (e.g. `{ id: { eq: 1 } }`)                                |
+| `limit`       | Sets the default maximum number of records for `findMany`.               | `{ ctx, modelName, operation }` | `number`                                                                 |
+| `depthLimit`  | Limits query nesting depth to prevent performance issues.                | `{ ctx, modelName, operation }` | `number`                                                                 |
+| `orderBy`     | Defines the default sort order.                                          | `{ ctx, modelName, operation }` | `{ [column]: 'asc' \| 'desc' }`                                          |
+| `inputData`   | Injects server-side values (e.g., `userId`) into Mutations.              | `{ ctx, modelName, operation }` | `Object` (matching the model input)                                      |
 
-The `models` option allows you to target specific tables by their name. Settings defined here **override** the settings in `all`.
+## 🛡️ Comprehensive Example
 
-This is useful for:
-
-- Making specific tables read-only.
-- Exposing sensitive fields only on certain models.
-- Applying different authorization rules for "Admin" vs "User" tables.
-
-The structure is:
-
-```ts
-{
-  pothosDrizzleGenerator: {
-    models: {
-      [TableName]: { ...ModelOptions }
-    }
-  }
-}
-```
-
-### 3. Comprehensive Configuration Example
-
-Below is a comprehensive example showing how `all` and `models` work together to create a secure, production-ready schema.
+Below is a complete example showing how `use`, `all`, and `models` work together to create a secure, production-ready schema.
 
 ```ts
 const builder = new SchemaBuilder<PothosTypes>({
@@ -149,9 +183,9 @@ const builder = new SchemaBuilder<PothosTypes>({
     // 1. Global Exclusion: Don't generate schema for join tables
     use: { exclude: ["postsToCategories"] },
 
-    // --- Global Defaults (Applied to everyone) ---
+    // 2. Global Defaults (Applied to everyone)
     all: {
-      // Security: By default, only allow reading. Write operations require a logged-in user.
+      // Security: Read-only by default. Writes require login.
       executable: ({ ctx, operation }) => {
         if (
           operation.startsWith("create") ||
@@ -163,66 +197,56 @@ const builder = new SchemaBuilder<PothosTypes>({
         return true;
       },
 
-      // Visibility: Never expose password or secret fields globally.
+      // Visibility: Never expose password or secret fields.
       fields: () => ({ exclude: ["password", "secretKey"] }),
 
-      // Inputs: Never allow clients to manually set system timestamps.
+      // Inputs: Never allow clients to set system timestamps.
       inputFields: () => ({ exclude: ["createdAt", "updatedAt"] }),
 
-      // Logic: Exclude soft-deleted records (where deletedAt is not null).
+      // Logic: Exclude soft-deleted records.
       where: ({ operation }) => {
         if (operation !== "delete") return { deletedAt: { isNull: true } };
         return {};
       },
 
-      // Performance: Default limit of 50 records.
+      // Performance: Default limits.
       limit: () => 50,
       depthLimit: () => 5,
     },
 
-    // --- Model Overrides (Specific logic) ---
+    // 3. Model Overrides
     models: {
-      // Case 1: The 'users' table needs strict privacy.
+      // Case A: Strict privacy for 'users'
       users: {
-        // Override: Users can only see themselves.
-        where: ({ ctx, operation }) => ({
-          id: { eq: ctx.user?.id },
-        }),
-        // Override: Allow fetching only 1 record (profile) instead of list.
+        // Users can only see themselves
+        where: ({ ctx }) => ({ id: { eq: ctx.user?.id } }),
         limit: () => 1,
-        // Override: Disable delete operation entirely for users.
         operations: () => ({ exclude: ["delete"] }),
       },
 
-      // Case 2: The 'posts' table is public but owned.
+      // Case B: Public but owned 'posts'
       posts: {
-        // Override: Allow fetching up to 100 posts (overriding global 50).
         limit: () => 100,
 
-        // Injection: Automatically attach the authorId on creation.
-        inputData: ({ ctx }) => {
-          const user = ctx.get("user");
-          if (!user) throw new Error("Unauthorized");
-          return { authorId: user.id };
-        },
+        // Automatically attach authorId on creation
+        inputData: ({ ctx }) => ({ authorId: ctx.user?.id }),
 
-        // Complex Filter: Show published posts OR my own posts.
+        // Complex Filter: Public posts OR my own posts
         where: ({ ctx, operation }) => {
           if (operation === "findMany" || operation === "findFirst") {
             return {
               OR: [{ published: true }, { authorId: { eq: ctx.user?.id } }],
             };
           }
-          // Users can only update/delete their own posts
+          // Only update/delete own posts
           if (operation === "update" || operation === "delete") {
             return { authorId: ctx.user?.id };
           }
         },
       },
 
-      // Case 3: The 'audit_logs' table is admin-only.
+      // Case C: Admin-only table
       audit_logs: {
-        // Override: Only admins can access this table at all.
         executable: ({ ctx }) => !!ctx.user?.isAdmin,
       },
     },
@@ -230,38 +254,23 @@ const builder = new SchemaBuilder<PothosTypes>({
 });
 ```
 
-## Supported Features
+## 🔍 Supported Features
 
-### Operations (Query & Mutation)
+### Operations
 
-The following operations are automatically generated for each model (unless excluded):
+The generator creates the following GraphQL fields for each model (unless excluded):
 
-- **Reads:** `findMany`, `findFirst`, `count`
-- **Writes:** `create`, `update`, `delete`
+- **Queries**: `findMany`, `findFirst`, `count`
+- **Mutations**: `create`, `update`, `delete`
 
-### Filtering (Where)
+### Filtering
 
-Complex filtering is supported out-of-the-box using the `where` argument.
+Advanced filtering is supported via the `where` argument on queries.
 
-**Logical Operators:**
-
-- `AND`, `OR`, `NOT`
-
-**Comparison Operators:**
-
-- `eq`, `ne` (Equal / Not Equal)
-- `gt`, `gte`, `lt`, `lte` (Greater/Less than)
-- `in`, `notIn`
-- `isNull`, `isNotNull`
-
-**String Operators:**
-
-- `like`, `notLike`
-- `ilike`, `notIlike` (Case insensitive)
-
-**Array Operators:**
-
-- `arrayContained`, `arrayOverlaps`, `arrayContains`
+- **Logical**: `AND`, `OR`, `NOT`
+- **Comparison**: `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `in`, `notIn`, `isNull`, `isNotNull`
+- **String**: `like`, `notLike`, `ilike`, `notIlike`
+- **Array**: `arrayContained`, `arrayOverlaps`, `arrayContains`
 
 ## License
 
