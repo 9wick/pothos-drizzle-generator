@@ -4,6 +4,8 @@
 
 It eliminates boilerplate by creating types, input objects, and resolvers for standard CRUD operations while offering granular control over permissions, filtering, and field visibility.
 
+- Screenshot in ApolloExplorer
+
 ![](./documents/image.png)
 
 ## 🚀 Features
@@ -299,11 +301,17 @@ const builder = new SchemaBuilder<PothosTypes>({
 
 ## Examples of Using the Generated GraphQL
 
+This section demonstrates the power of the generated schema, focusing on how it handles complex relations efficiently and ensures data integrity.
+
 ### findMany
 
-- GraphQL
+**Efficient Relational Data Retrieval (Solving N+1)**
 
-Data retrieval via relations can be easily performed.
+The generated `findMany` operation allows you to fetch complex, nested data in a single request.
+
+- **GraphQL Benefits**: You can retrieve a `Post` along with its `author`, `categories`, and related counts simultaneously. Pagination (`offset`/`limit`), filtering (`where`), and sorting (`orderBy`) are supported at every level of the graph.
+- **Performance (SQL)**: The generator solves the classic **N+1 problem** by consolidating the entire fetch into a **single optimized SQL query** using complex `JOIN` and `LATERAL` clauses. This ensures your API remains performant regardless of data volume.
+- **GraphQL**
 
 ```graphql
 query FindManyPost(
@@ -346,9 +354,9 @@ query FindManyPost(
 }
 ```
 
-- Output SQL
+- **Output SQL**
 
-Queries are consolidated into a single query without triggering N+1.
+Notice how all data is retrieved in one go:
 
 ```sql
  select
@@ -422,13 +430,18 @@ from
   ) as "categories" on true
 where
   "d0"."published" = $2
+
 ```
 
 ### create
 
-- GraphQL
+**Transactional Writes & Many-to-Many Handling**
 
-You can create ManyToMany data simultaneously.
+The `create` mutation simplifies handling related data, ensuring data integrity through transactions.
+
+- **GraphQL Benefits**: You can create a main record (e.g., `Post`) and link it to related records (e.g., `categories` in a Many-to-Many relationship) in a **single mutation**.
+- **Data Integrity (SQL)**: The operation is automatically wrapped in a **database transaction (`begin` ... `commit`)**. This guarantees consistency: the post is created, old associations are handled, and new associations are inserted atomically. If any part fails, the entire operation is rolled back.
+- **GraphQL**
 
 ```graphql
 mutation Mutation($input: PostCreate!) {
@@ -461,9 +474,9 @@ mutation Mutation($input: PostCreate!) {
 }
 ```
 
-- Output SQL
+- **Output SQL**
 
-A transaction for data insertion will be generated.
+A transaction ensures atomicity:
 
 ```sql
 begin;
@@ -536,6 +549,7 @@ select
             "d0"."id" = "tr0"."postId"
         ) as "t"
     ) as "categories" on true
+
 ```
 
 ## 🔍 Supported Features
