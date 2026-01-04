@@ -9,9 +9,7 @@ export const { app, client, db } = createClient({
   pothosDrizzleGenerator: {},
 });
 
-/**
- * GraphQL Query 定義
- */
+
 const FIND_FIRST_POST = gql`
   fragment post on Post {
     id
@@ -156,7 +154,7 @@ describe("Query: findFirstPost (Drizzle v2 Pure Object Syntax)", () => {
     await db.dropSchema();
   });
   it("should retrieve a first post using object-based where clause", async () => {
-    // 準備: テスト用のデータをDBから直接取得 (Drizzle v2 オブジェクト形式)
+    
     const targetPost = await db.query.posts.findFirst({
       where: {
         id: { isNotNull: true },
@@ -183,7 +181,7 @@ describe("Query: findFirstPost (Drizzle v2 Pure Object Syntax)", () => {
   });
 
   it("should return the first record matching a specific non-id condition", async () => {
-    // 準備: 特定のタイトルを持つデータを取得
+    
     const targetPost = await db.query.posts.findFirst({
       where: {
         published: { eq: true },
@@ -202,7 +200,7 @@ describe("Query: findFirstPost (Drizzle v2 Pure Object Syntax)", () => {
     expect(result.data?.findFirstPost.published).toBe(true);
   });
 
-  // --- 追加テストケース ---
+  
 
   it("should handle complex object filtering with multiple fields", async () => {
     const targetPost = await db.query.posts.findFirst();
@@ -237,7 +235,7 @@ describe("Query: findFirstPost (Drizzle v2 Pure Object Syntax)", () => {
       },
     });
 
-    // findFirst は該当なしの場合 null を返す
+    
     expect(result.data?.findFirstPost).toBeNull();
   });
 
@@ -256,7 +254,7 @@ describe("Query: findFirstPost (Drizzle v2 Pure Object Syntax)", () => {
   });
 
   it("should verify all parameters using FIND_FIRST_POST4", async () => {
-    // 準備: テスト用のデータを取得
+    
     const post = await db.query.posts.findFirst({
       with: {
         author: true,

@@ -10,10 +10,7 @@ export const { app, client, db } = createClient({
   pothosDrizzleGenerator: {},
 });
 
-/**
- * GraphQL Query 定義
- * オペレーション名を findManyPost に統一
- */
+
 const FIND_MANY_POST = gql`
   fragment post on Post {
     id
@@ -99,7 +96,7 @@ describe("Query: findManyPost (Drizzle v2 Pure Object Syntax)", () => {
     await db.dropSchema();
   });
   it("should retrieve posts using object-based where clause", async () => {
-    // Drizzle v2: 純粋なオブジェクトによる取得
+    
     const allPosts = await db.query.posts.findMany({
       limit: 5,
       where: {

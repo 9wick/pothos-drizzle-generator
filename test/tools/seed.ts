@@ -20,7 +20,7 @@ async function main() {
     },
     relations,
   });
-  // await db.execute(`drop schema ${searchPath} cascade`).catch(() => {});
+  
   await migrate(db, { migrationsFolder: "./test/drizzle", migrationsSchema: searchPath });
   await db.transaction(async (tx) => {
     await reset(tx, schema);

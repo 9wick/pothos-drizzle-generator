@@ -9,10 +9,7 @@ export const { app, client, db } = createClient({
   pothosDrizzleGenerator: {},
 });
 
-/**
- * GraphQL Mutation 定義
- * createManyPost は作成されたレコードの配列を返す仕様
- */
+
 const CREATE_MANY_POST = gql`
   fragment post on Post {
     id
@@ -105,10 +102,10 @@ describe("Mutation: createManyPost (Drizzle v2 Pure Object Syntax)", () => {
     expect(Array.isArray(data)).toBe(true);
     expect(data).toHaveLength(2);
 
-    // スナップショットの検証（IDや日付を除外）
+    
     expect(data.map((post) => filterObject(post, IGNORED_KEYS))).toMatchSnapshot();
 
-    // DB側に正しく保存されているかオブジェクト形式で検証
+    
     const savedPosts = await db.query.posts.findMany({
       where: {
         title: { in: ["Bulk Post 1", "Bulk Post 2"] },
@@ -117,7 +114,7 @@ describe("Mutation: createManyPost (Drizzle v2 Pure Object Syntax)", () => {
     expect(savedPosts).toHaveLength(2);
   });
 
-  // --- 追加テストケース ---
+  
 
   it("should return an empty array when input is an empty list", async () => {
     const result = await client.mutation<{ createManyPost: PostResponse[] }>(CREATE_MANY_POST, {
@@ -147,7 +144,7 @@ describe("Mutation: createManyPost (Drizzle v2 Pure Object Syntax)", () => {
 
     const createdId = result.data?.createManyPost[0].id;
 
-    // 作成されたレコードをオブジェクト形式の where で再取得
+    
     const verified = await db.query.posts.findFirst({
       where: {
         id: { eq: createdId },

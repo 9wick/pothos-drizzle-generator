@@ -14,9 +14,7 @@ import type { Context } from "../context";
 import type { TablesRelationalConfig } from "drizzle-orm";
 import type { Context as HonoContext } from "hono";
 
-/**
- * GraphQL Query 定義
- */
+
 const FIND_FIRST_POST = gql`
   fragment post on Post {
     id

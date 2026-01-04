@@ -9,9 +9,7 @@ export const { app, client, db } = createClient({
   pothosDrizzleGenerator: {},
 });
 
-/**
- * GraphQL Mutation 定義
- */
+
 const CREATE_ONE_POST = gql`
   fragment post on Post {
     id
@@ -73,7 +71,7 @@ describe("Mutation: createOnePost (Drizzle v2 Pure Object Syntax)", () => {
   });
 
   it("should create a single post with non-null fields and return the created record", async () => {
-    // Drizzle v2: 純粋なオブジェクトによる取得
+    
     const author = await db.query.users.findFirst({
       where: {
         id: { isNotNull: true },
@@ -100,11 +98,11 @@ describe("Mutation: createOnePost (Drizzle v2 Pure Object Syntax)", () => {
 
     if (!createdPost) throw new Error("Mutation result data is missing");
 
-    // スナップショット検証（IDや日付を除外）
+    
     expect(filterObject(createdPost, IGNORED_KEYS)).toMatchSnapshot();
     expect(createdPost.author.id).toBe(author.id);
 
-    // DB側に正しく保存されているかオブジェクト形式で検証
+    
     const savedPost = await db.query.posts.findFirst({
       where: {
         id: { eq: createdPost.id },
@@ -117,7 +115,7 @@ describe("Mutation: createOnePost (Drizzle v2 Pure Object Syntax)", () => {
     expect(savedPost?.published).toBe(true);
   });
 
-  // --- 追加テストケース ---
+  
 
   it("should create a post and verify it with complex object filtering", async () => {
     const author = await db.query.users.findFirst();
@@ -137,7 +135,7 @@ describe("Mutation: createOnePost (Drizzle v2 Pure Object Syntax)", () => {
     const createdPost = result.data?.createOnePost;
     if (!createdPost) throw new Error("Post creation failed");
 
-    // 複数の条件を組み合わせたオブジェクト形式の where で再取得
+    
     const verified = await db.query.posts.findFirst({
       where: {
         id: { eq: createdPost.id },
@@ -151,11 +149,11 @@ describe("Mutation: createOnePost (Drizzle v2 Pure Object Syntax)", () => {
   });
 
   it("should return an error when required fields are missing (Schema Validation)", async () => {
-    // content や published が欠落している場合、GraphQLレベルでエラーになることを期待
+    
     const result = await client.mutation(CREATE_ONE_POST, {
       input: {
         title: "Incomplete Post",
-        // content と published が欠落
+        
       },
     });
 

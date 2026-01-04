@@ -115,14 +115,14 @@ export class DrizzleGenerator<Types extends SchemaTypes> {
           ])
         );
 
-        //Operations
+        
         const operationValue = (modelOptions?.operations ?? allOptions?.operations)?.({
           modelName,
         });
         const operationIncludes = expandOperations(operationValue?.include ?? OperationBasic);
         const operationExcludes = expandOperations(operationValue?.exclude ?? []);
         const operations = operationIncludes.filter((v) => !operationExcludes.includes(v));
-        // Columns filter
+        
         const columnValue = (modelOptions?.fields ?? allOptions?.fields)?.({
           modelName,
         });
@@ -134,7 +134,7 @@ export class DrizzleGenerator<Types extends SchemaTypes> {
         const exclude = (columnValue?.exclude as undefined | string[]) ?? [];
         const filterColumns = include.filter((name) => !exclude.includes(name));
 
-        // Input columns filter
+        
         const inputFieldValue = (modelOptions?.inputFields ?? allOptions?.inputFields)?.({
           modelName,
         });
@@ -162,7 +162,7 @@ export class DrizzleGenerator<Types extends SchemaTypes> {
         ] as const;
       });
     const modelNames = tables.map(([name]) => name);
-    // Model filter
+    
     const include = options?.use?.include ?? modelNames;
     const exclude = options?.use?.exclude ?? [];
     const filterTables = include.filter((name) => !exclude.includes(name));

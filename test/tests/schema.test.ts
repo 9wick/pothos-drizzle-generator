@@ -224,7 +224,7 @@ describe("GraphQL Schema Generation", () => {
       expect(fieldNames).not.toHaveLength(0);
       expect(fieldNames).not.toContain("authorId");
       expect(fieldNames).not.toContain("categories");
-      expect(fieldNames).toContain("id"); // 他のフィールドは残る
+      expect(fieldNames).toContain("id"); 
     });
 
     it("should prioritize model-specific field settings over global 'all' settings", () => {

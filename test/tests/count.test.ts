@@ -9,9 +9,7 @@ export const { app, client, db } = createClient({
   pothosDrizzleGenerator: {},
 });
 
-/**
- * GraphQL Query 定義
- */
+
 const COUNT_POSTS = gql`
   query CountPost($where: PostWhere) {
     countPost(where: $where)

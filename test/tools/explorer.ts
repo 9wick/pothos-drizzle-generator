@@ -12,12 +12,12 @@ export const { app, schema, db } = createApp({
   onCreateBuilder,
   pothosDrizzleGenerator: {},
 });
-// Apollo Explorer
+
 app.get("/", (c) => {
   return c.html(
     explorer({
       initialState: {
-        // Set up sample GraphQL operations
+        
         document: generate(schema, 1),
       },
       endpointUrl: "/",

@@ -9,10 +9,7 @@ export const { app, client, db } = createClient({
   pothosDrizzleGenerator: {},
 });
 
-/**
- * GraphQL Mutation 定義
- * deletePost は削除されたレコードの配列を返す仕様
- */
+
 const DELETE_POST_WITH_RELATIONS = gql`
   fragment category on Category {
     id
@@ -80,7 +77,7 @@ describe("Mutation: deletePost (Drizzle v2 Pure Object Syntax)", () => {
     await db.dropSchema();
   });
   it("should delete a post and return an array using object-based where clause", async () => {
-    // Drizzle v2: 純粋なオブジェクトによる取得 (isNotNullを使用)
+    
     const targetPost = await db.query.posts.findFirst({
       where: {
         id: { isNotNull: true },
@@ -107,7 +104,7 @@ describe("Mutation: deletePost (Drizzle v2 Pure Object Syntax)", () => {
     expect(data).toHaveLength(1);
     expect(filterObject(data[0], IGNORED_KEYS)).toMatchSnapshot();
     expect(getLogs(db).length).toBe(2);
-    // 削除確認: DBに存在しないこと
+    
     const dbRecord = await db.query.posts.findFirst({
       where: {
         id: { eq: targetPost!.id },
@@ -131,7 +128,7 @@ describe("Mutation: deletePost (Drizzle v2 Pure Object Syntax)", () => {
 
     expect(data.length).toBeGreaterThanOrEqual(targetIds.length);
 
-    // DB側で対象が全て削除されているか検証
+    
     const remainingCount = await db.query.posts.findMany({
       where: {
         id: { in: targetIds },
@@ -155,7 +152,7 @@ describe("Mutation: deletePost (Drizzle v2 Pure Object Syntax)", () => {
 
     expect(data.length).toBeGreaterThanOrEqual(targetIds.length);
 
-    // DB側で対象が全て削除されているか検証
+    
     const remainingCount = await db.query.posts.findMany({
       where: {
         id: { in: targetIds },

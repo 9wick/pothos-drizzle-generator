@@ -149,7 +149,7 @@ export const createApp = <TRelations extends AnyRelations = EmptyRelations>({
   });
   app.use(contextStorage());
   app.post("/", async (c, next) => {
-    // Get the user from the token
+    
     const cookies = getCookie(c);
     const token = cookies["auth-token"] ?? "";
     const secret = process.env.SECRET;
