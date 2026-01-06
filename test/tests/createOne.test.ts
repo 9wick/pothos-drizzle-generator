@@ -200,4 +200,38 @@ describe("Mutation: createOnePost (Drizzle v2 Pure Object Syntax)", () => {
     expect(result.error).toBeUndefined();
     expect(result.data?.createOnePost.categories[0].__typename).toBe("Category");
   });
+
+  it("should create a single post with relations without error (Validation for dbColumnsInput fix)", async () => {
+    const categories = await db.query.categories.findMany({ limit: 1 });
+    if (categories.length < 1) throw new Error("Need at least 1 category");
+    clearLogs(db);
+    const result = await client.mutation<{
+      createOnePost: { id: string; title: string; categories: { name: string }[] };
+    }>(
+      gql`
+        mutation CreateOnePost {
+          createOnePost(input: {
+            title: "Post with Category",
+            content: "",
+            published: true,
+            categories: {
+              set: [{ id: "${categories[0].id}" }],
+            }
+          }) {
+            id
+            title
+            categories {
+              name
+            }
+          }
+        }
+      `,
+      {}
+    );
+    expect(result.error).toBeUndefined();
+    const data = result.data?.createOnePost;
+    expect(data).toBeDefined();
+    expect(data?.categories).toHaveLength(1);
+    expect(data?.categories[0].name).toBe(categories[0].name);
+  });
 });

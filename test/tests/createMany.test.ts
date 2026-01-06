@@ -9,7 +9,6 @@ export const { app, client, db } = createClient({
   pothosDrizzleGenerator: {},
 });
 
-
 const CREATE_MANY_POST = gql`
   fragment post on Post {
     id
@@ -102,10 +101,8 @@ describe("Mutation: createManyPost (Drizzle v2 Pure Object Syntax)", () => {
     expect(Array.isArray(data)).toBe(true);
     expect(data).toHaveLength(2);
 
-    
     expect(data.map((post) => filterObject(post, IGNORED_KEYS))).toMatchSnapshot();
 
-    
     const savedPosts = await db.query.posts.findMany({
       where: {
         title: { in: ["Bulk Post 1", "Bulk Post 2"] },
@@ -113,8 +110,6 @@ describe("Mutation: createManyPost (Drizzle v2 Pure Object Syntax)", () => {
     });
     expect(savedPosts).toHaveLength(2);
   });
-
-  
 
   it("should return an empty array when input is an empty list", async () => {
     const result = await client.mutation<{ createManyPost: PostResponse[] }>(CREATE_MANY_POST, {
@@ -144,7 +139,6 @@ describe("Mutation: createManyPost (Drizzle v2 Pure Object Syntax)", () => {
 
     const createdId = result.data?.createManyPost[0].id;
 
-    
     const verified = await db.query.posts.findFirst({
       where: {
         id: { eq: createdId },
@@ -240,5 +234,52 @@ describe("Mutation: createManyPost (Drizzle v2 Pure Object Syntax)", () => {
     });
     expect(result.error).toBeUndefined();
     expect(result.data?.createManyPost[0].categories[0].__typename).toBe("Category");
+  });
+
+  it("should create multiple posts with relations without error (Validation for dbColumnsInput fix)", async () => {
+    const categories = await db.query.categories.findMany({ limit: 2 });
+    if (categories.length < 2) throw new Error("Need at least 2 categories");
+    clearLogs(db);
+    const result = await client.mutation<{
+      createManyPost: { id: string; title: string; categories: { name: string }[] }[];
+    }>(
+      gql`
+        mutation CreateManyPosts {
+          createManyPost(input: [
+          {
+            title: "Post 1 with Category",
+            content: "",
+            published: true,
+            categories: {
+              set: [{ id: "${categories[0].id}" }],
+            }
+          },
+          {
+            title: "Post 2 with Category",
+            content: "",
+            published: true,
+            categories: {
+              set: [{ id: "${categories[1].id}" }],
+            }
+          },
+        ]) {
+            id
+            title
+            categories {
+              name
+            }
+          }
+        }
+      `,
+      {}
+    );
+    console.log(result);
+    expect(result.error).toBeUndefined();
+    const data = result.data?.createManyPost;
+    expect(data).toHaveLength(2);
+    expect(data?.[0].categories).toHaveLength(1);
+    expect(data?.[0].categories[0].name).toBe(categories[0].name);
+    expect(data?.[1].categories).toHaveLength(1);
+    expect(data?.[1].categories[0].name).toBe(categories[1].name);
   });
 });

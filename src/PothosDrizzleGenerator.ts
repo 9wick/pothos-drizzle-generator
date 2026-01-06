@@ -564,6 +564,11 @@ export class PothosDrizzleGenerator<
               ...v,
               ...params.input,
             }));
+            const dbColumnsInputs = combinedInputs.map((input) =>
+              Object.fromEntries(
+                Object.entries(input).filter(([key]) => columns.some((col) => col.name === key))
+              )
+            );
             const relationFieldsInputs = combinedInputs.map((v) =>
               Object.entries(v).filter(([key]) => columns.every((col) => col.name !== key))
             );
@@ -577,13 +582,13 @@ export class PothosDrizzleGenerator<
             if (!returning) {
               return client
                 .insert(table as never)
-                .values(combinedInputs)
+                .values(dbColumnsInputs as never)
                 .then((v) => Array(v.rowCount!).fill({}));
             }
             return client.transaction(async (tx) =>
               tx
                 .insert(table as never)
-                .values(combinedInputs)
+                .values(dbColumnsInputs as never)
                 .returning(returning)
                 .then(async (results) => {
                   if (hasRelationInput) {
@@ -632,6 +637,11 @@ export class PothosDrizzleGenerator<
               modelData
             );
             const combinedInput = { ...args.input, ...params.input };
+            const dbColumnsInput = Object.fromEntries(
+              Object.entries(combinedInput).filter(([key]) =>
+                columns.some((col) => col.name === key)
+              )
+            );
             const relationFieldsInput = Object.entries(combinedInput).filter(([key]) =>
               columns.every((col) => col.name !== key)
             );
@@ -648,7 +658,7 @@ export class PothosDrizzleGenerator<
             if (!returning) {
               return client
                 .update(table as never)
-                .set(combinedInput)
+                .set(dbColumnsInput as never)
                 .where(whereQuery)
                 .then((v) => Array(v.rowCount!).fill({}));
             }
@@ -656,7 +666,7 @@ export class PothosDrizzleGenerator<
             return client.transaction(async (tx) =>
               tx
                 .update(table as never)
-                .set(combinedInput)
+                .set(dbColumnsInput as never)
                 .where(whereQuery)
                 .returning(returning)
                 .then(async (results) => {

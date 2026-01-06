@@ -124,6 +124,51 @@ describe("Mutation: updatePost (Drizzle v2 Pure Object Syntax)", () => {
     expect(dbRecord?.title).toBe("Updated with Object Syntax");
   });
 
+  it("should update relations and verify results in the returned array 2", async () => {
+    const categories = await db.query.categories.findMany({
+      limit: 2,
+    });
+
+    const targetPost = await db.query.posts.findFirst();
+    clearLogs(db);
+
+    const result = await client.mutation<{ updatePost: PostResponse[] }>(
+      gql`
+        mutation {
+          updatePost(
+            where: { id: { eq: "${targetPost!.id}" } }
+            input: {
+              title: "update title"
+              categories: {
+                set: [
+                  ${categories.map((c) => `{ id: "${c.id}" }`).join("\n")}
+                ]
+              }
+            }
+          ) {
+            id
+            title
+            updatedAt
+            categories {
+              name
+            }
+          }
+        }
+      `,
+      {}
+    );
+    const updatedPost = result.data?.updatePost[0];
+    expect(updatedPost?.categories).toHaveLength(categories.length);
+    expect(updatedPost?.title).toBe("update title");
+
+    const dbRecord = await db.query.posts.findFirst({
+      where: {
+        id: { eq: targetPost!.id },
+      },
+    });
+    expect(dbRecord?.title).toBe("update title");
+  });
+
   it("should handle multi-field updates and verify the first element of the result array", async () => {
     const targetPost = await db.query.posts.findFirst();
     const newContent = "Updated content via pure object syntax";
@@ -312,5 +357,29 @@ describe("Mutation: updatePost (Drizzle v2 Pure Object Syntax)", () => {
     data?.forEach((post) => {
       expect(post.title).toBe(newTitle);
     });
+  });
+
+  it("should update a post with relations without error (Validation for dbColumnsInput fix)", async () => {
+    const targetPost = await db.query.posts.findFirst();
+    const category = await db.query.categories.findFirst();
+
+    const result = await client.mutation<{ updatePost: PostResponse[] }>(UPDATE_POST_FULL, {
+      input: {
+        title: "Updated Title with Relation",
+        categories: {
+          set: [{ id: category!.id }],
+        },
+      },
+      where: {
+        id: { eq: targetPost?.id },
+      },
+    });
+
+    expect(result.error).toBeUndefined();
+    const data = result.data?.updatePost;
+    expect(data).toHaveLength(1);
+    expect(data?.[0].title).toBe("Updated Title with Relation");
+    expect(data?.[0].categories).toHaveLength(1);
+    expect(data?.[0].categories?.[0].name).toBe(category?.name);
   });
 });
