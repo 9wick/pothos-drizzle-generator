@@ -20,10 +20,14 @@ const OperatorMap = {
   arrayContains: p.arrayContains,
 };
 
-type OperatorType = Record<string, Record<keyof typeof OperatorMap, unknown>>;
+type PartialRecord<K extends PropertyKey, T> = {
+  [P in K]?: T;
+};
+
+type OperatorType = PartialRecord<string, PartialRecord<keyof typeof OperatorMap, unknown>>;
 type OperatorTree =
-  | Record<"AND" | "OR", OperatorType[]>
-  | Record<"NOT", OperatorType>
+  | PartialRecord<"AND" | "OR", OperatorTree[]>
+  | { NOT?: OperatorTree }
   | OperatorType;
 
 export const createWhereQuery = (table: p.SchemaEntry, tree?: OperatorTree): p.SQL | undefined => {

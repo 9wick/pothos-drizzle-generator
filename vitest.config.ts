@@ -6,6 +6,9 @@ export default defineConfig({
   test: {
     maxWorkers: "100%",
     include: ["test/tests/*.test.ts"],
+    typecheck: {
+      enabled: true,
+    },
     coverage: {
       include: ["src/**/*.{ts,tsx}"],
       exclude: ["src/global-types.ts"],
