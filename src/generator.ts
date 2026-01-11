@@ -14,8 +14,9 @@ import {
   DateTimeResolver,
   JSONResolver,
 } from "graphql-scalars";
+import { getQueryFields, type FieldTree } from "./libs/graphql.js";
 import { expandOperations, OperationBasic } from "./libs/operations.js";
-import { createInputOperator, getQueryFields, type FieldTree } from "./libs/utils.js";
+import { createInputOperator } from "./libs/pothos.js";
 import type { SchemaTypes } from "@pothos/core";
 import type { DrizzleClient } from "@pothos/plugin-drizzle";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";

@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import { replaceColumnValues, type ModelData, DrizzleGenerator } from "../generator.js";
-import { checkPermissionsAndGetParams } from "../libs/utils.js";
-import { getQueryFields } from "../libs/utils.js";
+import { getQueryFields } from "../libs/graphql.js";
+import { checkPermissionsAndGetParams } from "../libs/permissions.js";
 import type { SchemaTypes } from "@pothos/core";
 import type { GraphQLResolveInfo } from "graphql";
 

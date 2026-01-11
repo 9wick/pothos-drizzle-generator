@@ -5,8 +5,9 @@ import {
   DrizzleGenerator,
   replaceColumnValues,
 } from "../generator.js";
-import { checkPermissionsAndGetParams } from "../libs/utils.js";
-import { createWhereQuery, getQueryFields } from "../libs/utils.js";
+import { createWhereQuery } from "../libs/drizzle.js";
+import { getQueryFields } from "../libs/graphql.js";
+import { checkPermissionsAndGetParams } from "../libs/permissions.js";
 import type { SchemaTypes } from "@pothos/core";
 import type { PgAsyncTransaction, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type { GraphQLResolveInfo } from "graphql";

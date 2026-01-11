@@ -1,7 +1,7 @@
 import { and, eq, sql, type AnyRelation } from "drizzle-orm";
 import { type ModelData, DrizzleGenerator } from "../generator.js";
-import { checkPermissionsAndGetParams } from "../libs/utils.js";
-import { createWhereQuery } from "../libs/utils.js";
+import { createWhereQuery } from "../libs/drizzle.js";
+import { checkPermissionsAndGetParams } from "../libs/permissions.js";
 import type { SchemaTypes } from "@pothos/core";
 import type { DrizzleObjectFieldBuilder } from "@pothos/plugin-drizzle";
 import type { PgTable } from "drizzle-orm/pg-core";
