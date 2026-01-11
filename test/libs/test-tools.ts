@@ -17,14 +17,14 @@ import { jwtVerify } from "jose";
 import PothosDrizzleGeneratorPlugin from "../../src/index";
 import * as schema from "../db/schema.js";
 import type { Context } from "../context";
-import type { AnyRelations, EmptyRelations, TablesRelationalConfig } from "drizzle-orm";
+import type { AnyRelations, EmptyRelations } from "drizzle-orm";
 import type { Context as HonoContext } from "hono";
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
   throw new Error("DATABASE_URL is not set");
 }
-export const createDB = <TRelations extends TablesRelationalConfig>({
+export const createDB = <TRelations extends AnyRelations = EmptyRelations>({
   relations,
   isLog,
   searchPath,
@@ -97,10 +97,12 @@ export const createBuilder = <TRelations extends AnyRelations = EmptyRelations>(
   ) => void;
 }) => {
   const { db } = createDB({ relations, searchPath });
-  const builder = new SchemaBuilder<{
-    DrizzleRelations: TRelations;
-    Context: HonoContext<Context>;
-  }>({
+  const builder = new SchemaBuilder<
+    PothosSchemaTypes.ExtendDefaultTypes<{
+      DrizzleRelations: TRelations;
+      Context: HonoContext<Context>;
+    }>
+  >({
     plugins: [DrizzlePlugin, PothosDrizzleGeneratorPlugin],
     drizzle: {
       client: db as never,
@@ -123,7 +125,7 @@ export const createApp = <TRelations extends AnyRelations = EmptyRelations>({
   pothosDrizzleGenerator?: NormalizeSchemeBuilderOptions<
     PothosSchemaTypes.ExtendDefaultTypes<{
       DrizzleRelations: TRelations;
-      Context: HonoContext;
+      Context: HonoContext<Context>;
     }>
   >["pothosDrizzleGenerator"];
   onCreateBuilder?: (
@@ -178,7 +180,7 @@ export const createClient = <TRelations extends AnyRelations = EmptyRelations>({
   pothosDrizzleGenerator?: NormalizeSchemeBuilderOptions<
     PothosSchemaTypes.ExtendDefaultTypes<{
       DrizzleRelations: TRelations;
-      Context: HonoContext;
+      Context: HonoContext<Context>;
     }>
   >["pothosDrizzleGenerator"];
   onCreateBuilder?: (

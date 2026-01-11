@@ -5,6 +5,7 @@ import {
   type Column,
   type RelationsRecord,
   type SchemaEntry,
+  type TablesRelationalConfig,
 } from "drizzle-orm";
 import {
   BigIntResolver,
@@ -17,8 +18,8 @@ import { expandOperations, OperationBasic } from "./libs/operations.js";
 import { createInputOperator, getQueryFields, type FieldTree } from "./libs/utils.js";
 import type { SchemaTypes } from "@pothos/core";
 import type { DrizzleClient } from "@pothos/plugin-drizzle";
-import type { NodePgDatabase } from "drizzle-orm/node-postgres/driver.js";
-import type { PgColumn, getTableConfig } from "drizzle-orm/pg-core";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import type { PgAsyncRelationalQueryHKT, PgColumn, getTableConfig } from "drizzle-orm/pg-core";
 import type { RelationalQueryBuilder } from "drizzle-orm/pg-core/query-builders/query";
 import type { GraphQLResolveInfo } from "graphql";
 
@@ -172,10 +173,14 @@ export class DrizzleGenerator<Types extends SchemaTypes> {
     const drizzleOption = options.drizzle;
     const client =
       drizzleOption.client instanceof Function ? drizzleOption.client(ctx) : drizzleOption.client;
-    return client as unknown as NodePgDatabase<never, never>;
+    return client as unknown as NodePgDatabase;
   }
   getQueryTable(ctx: object, modelName: string) {
-    return this.getClient(ctx).query[modelName as never] as RelationalQueryBuilder<never, never>;
+    return this.getClient(ctx).query[modelName as never] as RelationalQueryBuilder<
+      TablesRelationalConfig,
+      TablesRelationalConfig[string],
+      PgAsyncRelationalQueryHKT
+    >;
   }
   getRelations(): AnyRelations {
     const drizzleOption = this.builder.options.drizzle;

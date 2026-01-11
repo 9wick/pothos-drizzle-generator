@@ -6,7 +6,6 @@ import {
   type AnyRelation,
   type EmptyRelations,
   type RelationsRecord,
-  type TablesRelationalConfig,
 } from "drizzle-orm";
 import {
   DrizzleGenerator,
@@ -17,13 +16,7 @@ import {
 import { isOperation, type OperationBasic } from "./libs/operations.js";
 import { createWhereQuery, getQueryDepth, getQueryFields } from "./libs/utils.js";
 import type { DrizzleObjectFieldBuilder } from "@pothos/plugin-drizzle";
-import type {
-  PgAsyncRelationalQueryHKT,
-  PgAsyncTransaction,
-  PgQueryResultHKT,
-  PgTable,
-} from "drizzle-orm/pg-core";
-import type { RelationalQueryBuilder } from "drizzle-orm/pg-core/query-builders/query.js";
+import type { PgAsyncTransaction, PgQueryResultHKT, PgTable } from "drizzle-orm/pg-core";
 import type { GraphQLResolveInfo } from "graphql";
 
 type OperationParams = {
@@ -450,13 +443,8 @@ export class PothosDrizzleGenerator<
               modelData
             );
 
-            return (
-              this.generator.getClient(ctx).query[modelName as never] as RelationalQueryBuilder<
-                TablesRelationalConfig,
-                TablesRelationalConfig[string],
-                PgAsyncRelationalQueryHKT
-              >
-            )
+            return this.generator
+              .getQueryTable(ctx, modelName)
               .findFirst({
                 columns: {},
                 extras: { _count: () => sql`count(*) ` },
