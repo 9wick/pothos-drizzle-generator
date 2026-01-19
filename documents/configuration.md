@@ -68,19 +68,162 @@ pothosDrizzleGenerator: {
 
 The following callbacks can be used within both `all` and `models`.
 
-| Property      | Purpose                                                    | Arguments                       | Expected Return                  |
-| ------------- | ---------------------------------------------------------- | ------------------------------- | -------------------------------- |
-| `executable`  | Authorization check. Return `false` to block execution.    | `{ ctx, modelName, operation }` | `boolean`                        |
-| `fields`      | Control output field visibility.                           | `{ modelName }`                 | `{ include?: [], exclude?: [] }` |
-| `inputFields` | Control input field visibility (for mutations).            | `{ modelName }`                 | `{ include?: [], exclude?: [] }` |
-| `operations`  | Select which CRUD operations to generate.                  | `{ modelName }`                 | `{ include?: [], exclude?: [] }` |
-| `where`       | Apply mandatory filters (e.g., multi-tenancy).             | `{ ctx, modelName, operation }` | `FilterObject`                   |
-| `limit`       | Set default max records for `findMany`.                    | `{ ctx, modelName, operation }` | `number`                         |
-| `depthLimit`  | Prevent deeply nested queries.                             | `{ ctx, modelName, operation }` | `number`                         |
-| `orderBy`     | Set default sort order.                                    | `{ ctx, modelName, operation }` | `{ [col]: 'asc' \| 'desc' }`     |
-| `inputData`   | Inject server-side values (e.g., `userId`) into mutations. | `{ ctx, modelName, operation }` | `Object`                         |
+| Property      | Purpose                                                    | Arguments                       | Expected Return                                        |
+| ------------- | ---------------------------------------------------------- | ------------------------------- | ------------------------------------------------------ |
+| `executable`  | Authorization check. Return `false` to block execution.    | `{ ctx, modelName, operation }` | `boolean`                                              |
+| `fields`      | Control output field visibility.                           | `{ modelName }`                 | `{ include?: [], exclude?: [] }`                       |
+| `inputFields` | Control input field visibility (for mutations).            | `{ modelName }`                 | `{ include?: [], exclude?: [] }`                       |
+| `operations`  | Select which CRUD operations to generate.                  | `{ modelName }`                 | `{ include?: [], exclude?: [] }`                       |
+| `aliases`     | Customize GraphQL type and operation names.                | `{ modelName }`                 | `{ singular?: string, plural?: string, operations?: {} }` |
+| `where`       | Apply mandatory filters (e.g., multi-tenancy).             | `{ ctx, modelName, operation }` | `FilterObject`                                         |
+| `limit`       | Set default max records for `findMany`.                    | `{ ctx, modelName, operation }` | `number`                                               |
+| `depthLimit`  | Prevent deeply nested queries.                             | `{ ctx, modelName, operation }` | `number`                                               |
+| `orderBy`     | Set default sort order.                                    | `{ ctx, modelName, operation }` | `{ [col]: 'asc' \| 'desc' }`                           |
+| `inputData`   | Inject server-side values (e.g., `userId`) into mutations. | `{ ctx, modelName, operation }` | `Object`                                               |
 
-## 5. Helper Functions
+## 5. Aliases - Customize Type & Operation Names
+
+The `aliases` configuration allows you to customize both GraphQL type names and operation names, giving you full control over your API's naming conventions.
+
+### Type Name Aliases
+
+Use `singular` to rename the GraphQL type generated for a model:
+
+```ts
+pothosDrizzleGenerator: {
+  models: {
+    posts: {
+      aliases: () => ({
+        singular: "Article",  // Renames "Post" → "Article"
+      })
+    }
+  }
+}
+```
+
+This changes:
+- GraphQL type: `Post` → `Article`
+- Input types: `PostCreate` → `ArticleCreate`, `PostWhere` → `ArticleWhere`, etc.
+
+### Operation Name Aliases
+
+Use `operations` to rename individual CRUD operations:
+
+```ts
+pothosDrizzleGenerator: {
+  models: {
+    posts: {
+      aliases: () => ({
+        operations: {
+          findMany: "listArticles",
+          findFirst: "getArticle",
+          count: "countArticles",
+          createOne: "createArticle",
+          createMany: "createArticles",
+          update: "updateArticles",
+          delete: "deleteArticles",
+        }
+      })
+    }
+  }
+}
+```
+
+**Default Behavior:**
+- If an operation alias is provided, it's used directly as the operation name
+- If no operation alias is provided, the default pattern is used: `{operation}{SingularTypeName}`
+  - Examples: `findManyPost`, `createOneUser`, `updateCategory`
+
+### Combining Type & Operation Aliases
+
+You can use both together for complete customization:
+
+```ts
+pothosDrizzleGenerator: {
+  models: {
+    posts: {
+      aliases: () => ({
+        singular: "BlogPost",
+        operations: {
+          findMany: "listBlogPosts",
+          createOne: "publishBlogPost",
+        }
+      })
+    }
+  }
+}
+```
+
+This creates:
+- Type: `BlogPost` (with `BlogPostCreate`, `BlogPostWhere`, etc.)
+- Operations: `listBlogPosts`, `publishBlogPost`, `findFirstBlogPost`, `countBlogPost`, etc.
+
+### Dynamic Aliases with Global Configuration
+
+Use the `all` configuration to apply conditional aliases across all models:
+
+```ts
+pothosDrizzleGenerator: {
+  all: {
+    aliases: ({ modelName }) => {
+      // Add "Api" prefix to all types
+      const typeName = modelName.charAt(0).toUpperCase() + modelName.slice(1);
+      return {
+        singular: `Api${typeName}`,
+      };
+    }
+  }
+}
+```
+
+### Use Cases
+
+**RESTful API Conventions:**
+```ts
+aliases: () => ({
+  operations: {
+    findMany: "list",
+    findFirst: "get",
+    createOne: "create",
+    update: "update",
+    delete: "delete",
+  }
+})
+```
+
+**Domain-Specific Language:**
+```ts
+// For a blog platform
+models: {
+  posts: {
+    aliases: () => ({
+      singular: "Article",
+      operations: {
+        createOne: "publish",
+        update: "revise",
+        delete: "unpublish",
+      }
+    })
+  }
+}
+```
+
+**Backwards Compatibility:**
+```ts
+// Maintain old API names during migration
+models: {
+  users: {
+    aliases: () => ({
+      singular: "Member",  // Legacy name
+      operations: {
+        findMany: "getMembers",
+      }
+    })
+  }
+}
+```
+
+## 6. Helper Functions
 
 Import `isOperation` to simplify conditional logic within your callbacks.
 
@@ -110,7 +253,7 @@ executable: ({ ctx, operation }) => {
 
 ---
 
-## 🛡️ Comprehensive Configuration Example
+## 7. Comprehensive Configuration Example
 
 This example demonstrates a production-ready setup combining global security rules with specific model overrides.
 
@@ -151,6 +294,14 @@ const builder = new SchemaBuilder<PothosTypes>({
         where: ({ ctx }) => ({ id: { eq: ctx.user?.id } }),
         limit: () => 1,
         operations: () => ({ exclude: ["delete"] }),
+        // Naming: Use domain-specific terminology
+        aliases: () => ({
+          singular: "Member",
+          operations: {
+            findMany: "listMembers",
+            findFirst: "getMember",
+          }
+        }),
       },
       posts: {
         limit: () => 100,
@@ -168,6 +319,15 @@ const builder = new SchemaBuilder<PothosTypes>({
             return { authorId: ctx.user?.id };
           }
         },
+        // Naming: Blog-specific operations
+        aliases: () => ({
+          singular: "Article",
+          operations: {
+            createOne: "publish",
+            update: "revise",
+            delete: "unpublish",
+          }
+        }),
       },
       audit_logs: {
         // Security: Admin access only
