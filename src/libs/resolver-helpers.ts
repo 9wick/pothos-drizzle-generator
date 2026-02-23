@@ -41,13 +41,16 @@ export function prepareQueryOptions(
   return queryOptions;
 }
 
-export function separateInput(input: object, columns: Pick<Column, "name">[]) {
+export function separateInput(input: object, columns: Pick<Column, "name">[], columnNameMap?: Record<string, string>) {
   const dbColumnsInput: Record<string, unknown> = {};
   const relationFieldsInput: [string, unknown][] = [];
 
   for (const [key, value] of Object.entries(input)) {
-    if (columns.some((col) => col.name === key)) {
-      dbColumnsInput[key] = value;
+    // key is JS property name from GraphQL input
+    // Check if any column's JS name matches
+    const isColumn = columns.some((col) => (columnNameMap?.[col.name] ?? col.name) === key);
+    if (isColumn) {
+      dbColumnsInput[key] = value;  // Keep JS name - Drizzle expects JS names
     } else {
       relationFieldsInput.push([key, value]);
     }
@@ -130,12 +133,13 @@ export const replaceColumnValues = (
     };
   }
   const info = tables[tableName]!;
-  const columns = info?.columns;
+  const { columns, columnNameMap } = info;
   if (columns) {
     queryData.columns = Object.fromEntries(
-      Object.entries(tree).flatMap(([name, value]) =>
-        value === true && columns.find((v) => v.name === name) ? [[name, true]] : []
-      )
+      Object.entries(tree).flatMap(([name, value]) => {
+        const isColumn = columns.find((v) => (columnNameMap?.[v.name] ?? v.name) === name);
+        return value === true && isColumn ? [[name, true]] : [];
+      })
     );
   }
   if (queryData.with) {
@@ -148,14 +152,19 @@ export const replaceColumnValues = (
   return queryData;
 };
 
-export const getReturning = (info: GraphQLResolveInfo, columns: Column[], primary?: boolean) => {
+export const getReturning = (info: GraphQLResolveInfo, columns: Column[], columnNameMap?: Record<string, string>, primary?: boolean) => {
   const queryFields = getQueryFields(info);
-  const isRelay = Object.keys(queryFields).some((v) => !columns.find((c) => c.name === v));
-  const returningColumns = columns.filter(
-    (v) => queryFields[v.name] || ((primary || isRelay) && v.primary)
+  const isRelay = Object.keys(queryFields).some(
+    (v) => !columns.find((c) => (columnNameMap?.[c.name] ?? c.name) === v)
   );
+  const returningColumns = columns.filter((v) => {
+    const jsName = columnNameMap?.[v.name] ?? v.name;
+    return queryFields[jsName] || ((primary || isRelay) && v.primary);
+  });
   if (!returningColumns.length) return { isRelay, queryFields, returning: undefined };
-  const returning = Object.fromEntries(returningColumns.map((v) => [v.name, v]));
+  const returning = Object.fromEntries(
+    returningColumns.map((v) => [columnNameMap?.[v.name] ?? v.name, v])
+  );
   return {
     isRelay,
     queryFields,

@@ -1,5 +1,6 @@
 import {
   isTable,
+  getColumns,
   type AnyRelations,
   type Column,
   type RelationsRecord,
@@ -80,6 +81,7 @@ export type ModelData = {
   columns: Column[];
   primaryColumns: Column[];
   inputColumns: Column[];
+  columnNameMap: Record<string, string>;
   tableInfo: TableConfig;
   relations: RelationsRecord;
   executable?:
@@ -149,6 +151,11 @@ export class DrizzleGenerator<Types extends SchemaTypes> {
       .filter((t) => isTable(t.table))
       .map(({ name: modelName, table, relations }) => {
         const tableInfo = getConfig(table as never);
+        const tableColumns = getColumns(table as never) as Record<string, Column>;
+        const columnNameMap: Record<string, string> = {};
+        for (const [jsName, col] of Object.entries(tableColumns)) {
+          columnNameMap[col.name] = jsName;
+        }
         const allOptions = options?.all;
         const modelOptions = options?.models?.[modelName];
         const columns = tableInfo.columns;
@@ -178,7 +185,7 @@ export class DrizzleGenerator<Types extends SchemaTypes> {
           modelName,
         });
         const include = (columnValue?.include as undefined | string[]) ?? [
-          ...columns.map((c) => c.name),
+          ...columns.map((c) => columnNameMap[c.name] ?? c.name),
           ...Object.keys(relations),
           ...Object.keys(relations).map((v) => `${v}Count`),
         ];
@@ -188,7 +195,7 @@ export class DrizzleGenerator<Types extends SchemaTypes> {
         const inputFieldValue = (modelOptions?.inputFields ?? allOptions?.inputFields)?.({
           modelName,
         });
-        const includeInput = inputFieldValue?.include ?? columns.map((c) => c.name);
+        const includeInput = inputFieldValue?.include ?? columns.map((c) => columnNameMap[c.name] ?? c.name);
         const excludeInput = inputFieldValue?.exclude ?? [];
         const filterInputColumns = includeInput.filter((name) => !excludeInput.includes(name));
         return [
@@ -203,7 +210,8 @@ export class DrizzleGenerator<Types extends SchemaTypes> {
             operationAliases: operationAliasValue,
             tableSingularAlias,
             tablePluralAlias,
-            inputColumns: columns.filter((c) => filterInputColumns.includes(c.name)),
+            columnNameMap,
+            inputColumns: columns.filter((c) => filterInputColumns.includes(columnNameMap[c.name] ?? c.name)),
             tableInfo,
             executable: modelOptions?.executable ?? allOptions?.executable,
             limit: modelOptions?.limit ?? allOptions?.limit,
@@ -246,6 +254,9 @@ export class DrizzleGenerator<Types extends SchemaTypes> {
     const result = Object.values(this.getTables()).find((v) => v.table === table);
     return result;
   }
+  getJsColumnName(modelName: string, sqlName: string): string {
+    return this.getTables()[modelName]?.columnNameMap[sqlName] ?? sqlName;
+  }
   getInputType(
     modelName: string,
     type: string,
@@ -266,11 +277,13 @@ export class DrizzleGenerator<Types extends SchemaTypes> {
     const relayFields = Object.entries(relations)
       .filter(([, relation]) => relation.through)
       .map(([relationName, relation]) => {
+        const targetTable = this.getTable(relation.targetTable);
+        const targetColumnNameMap = targetTable?.columnNameMap ?? {};
         const rowInputType = this.getInputType(modelName, `_${relationName}Set`, {
           fields: (t) =>
             Object.fromEntries(
               relation.targetColumns.map((col) => [
-                col.name,
+                targetColumnNameMap[col.name] ?? col.name,
                 t.field({
                   type: this.getDataType(col),
                   required: col.notNull && !col.hasDefault,
@@ -289,12 +302,12 @@ export class DrizzleGenerator<Types extends SchemaTypes> {
     return relayFields;
   }
   getInputCreate(modelName: string) {
-    const { inputColumns } = this.getTables()[modelName]!;
+    const { inputColumns, columnNameMap } = this.getTables()[modelName]!;
 
     return this.getInputType(modelName, "Create", {
       fields: (t) => {
         const dbFields = inputColumns.map((col: Column) => [
-          col.name,
+          columnNameMap[col.name] ?? col.name,
           t.field({
             type: this.getDataType(col),
             required: col.notNull && !col.hasDefault,
@@ -311,11 +324,11 @@ export class DrizzleGenerator<Types extends SchemaTypes> {
   }
 
   getInputUpdate(modelName: string) {
-    const { inputColumns } = this.getTables()[modelName]!;
+    const { inputColumns, columnNameMap } = this.getTables()[modelName]!;
     return this.getInputType(modelName, "Update", {
       fields: (t) => {
         const dbFields = inputColumns.map((c: Column) => [
-          c.name,
+          columnNameMap[c.name] ?? c.name,
           t.field({
             type: this.getDataType(c),
           }),
@@ -329,7 +342,7 @@ export class DrizzleGenerator<Types extends SchemaTypes> {
     });
   }
   getInputWhere(modelName: string) {
-    const { tableInfo, relations } = this.getTables()[modelName]!;
+    const { tableInfo, relations, columnNameMap } = this.getTables()[modelName]!;
     const inputWhere = this.getInputType(modelName, "Where", {
       fields: (t) => {
         return Object.fromEntries([
@@ -338,7 +351,7 @@ export class DrizzleGenerator<Types extends SchemaTypes> {
           ["NOT", t.field({ type: inputWhere })],
           ...tableInfo.columns.map((c: Column) => {
             return [
-              c.name,
+              columnNameMap[c.name] ?? c.name,
               t.field({
                 type: this.getInputOperator(this.getDataType(c)),
               }),
@@ -361,13 +374,13 @@ export class DrizzleGenerator<Types extends SchemaTypes> {
     return inputWhere;
   }
   getInputOrderBy(modelName: string) {
-    const { tableInfo } = this.getTables()[modelName]!;
+    const { tableInfo, columnNameMap } = this.getTables()[modelName]!;
     const inputWhere = this.getInputType(modelName, "OrderBy", {
       fields: (t) => {
         return Object.fromEntries(
           tableInfo.columns.map((c: Column) => {
             return [
-              c.name,
+              columnNameMap[c.name] ?? c.name,
               t.field({
                 type: this.enums["OrderBy"]!,
               }),
@@ -411,6 +424,15 @@ export class DrizzleGenerator<Types extends SchemaTypes> {
   getDataType(column: Column & { dimensions?: number }): string | [string] {
     const isArray = column.dimensions;
     const types = column.dataType.split(" ");
+    if (types[0] === "custom") {
+      const sqlType = column.getSQLType().toLowerCase();
+      if (sqlType.includes("int") || sqlType === "integer") return isArray ? ["Int"] : "Int";
+      if (sqlType.includes("float") || sqlType.includes("double") || sqlType.includes("real") || sqlType.includes("decimal") || sqlType.includes("numeric")) return isArray ? ["Float"] : "Float";
+      if (sqlType.includes("bool")) return isArray ? ["Boolean"] : "Boolean";
+      if (sqlType.includes("json")) return isArray ? ["Json"] : "Json";
+      if (sqlType.includes("date") || sqlType.includes("timestamp")) return isArray ? ["DateTime"] : "DateTime";
+      return isArray ? ["String"] : "String";
+    }
     if (types[0] === "string" && types[1] !== "enum") {
       return isArray ? ["String"] : "String";
     }

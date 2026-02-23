@@ -37,9 +37,9 @@ export function defineCreateOne<Types extends SchemaTypes>(
           const client = generator.getClient(ctx);
           const params = checkPermissionsAndGetParams(modelName, "createOne", ctx, info, modelData);
           const combinedInput = { ...args.input, ...params.input };
-          const { dbColumnsInput, relationFieldsInput } = separateInput(combinedInput, columns);
+          const { dbColumnsInput, relationFieldsInput } = separateInput(combinedInput, columns, modelData.columnNameMap);
           const hasRelationInput = relationFieldsInput.length > 0;
-          const { returning, isRelay } = getReturning(info, columns, hasRelationInput);
+          const { returning, isRelay } = getReturning(info, columns, modelData.columnNameMap, hasRelationInput);
           if (!isRelay) {
             query({});
           }
@@ -109,12 +109,12 @@ export function defineCreateMany<Types extends SchemaTypes>(
             ...v,
             ...params.input,
           }));
-          const separatedInputs = combinedInputs.map((input) => separateInput(input, columns));
+          const separatedInputs = combinedInputs.map((input) => separateInput(input, columns, modelData.columnNameMap));
           const dbColumnsInputs = separatedInputs.map((i) => i.dbColumnsInput);
           const relationFieldsInputs = separatedInputs.map((i) => i.relationFieldsInput);
 
           const hasRelationInput = relationFieldsInputs.some((v) => v.length > 0);
-          const { returning, isRelay } = getReturning(info, columns, hasRelationInput);
+          const { returning, isRelay } = getReturning(info, columns, modelData.columnNameMap, hasRelationInput);
 
           if (!isRelay) {
             query({});
@@ -178,9 +178,9 @@ export function defineUpdate<Types extends SchemaTypes>(
           const client = generator.getClient(ctx);
           const params = checkPermissionsAndGetParams(modelName, "update", ctx, info, modelData);
           const combinedInput = { ...args.input, ...params.input };
-          const { dbColumnsInput, relationFieldsInput } = separateInput(combinedInput, columns);
+          const { dbColumnsInput, relationFieldsInput } = separateInput(combinedInput, columns, modelData.columnNameMap);
           const hasRelationInput = relationFieldsInput.length > 0;
-          const { returning, isRelay } = getReturning(info, columns, hasRelationInput);
+          const { returning, isRelay } = getReturning(info, columns, modelData.columnNameMap, hasRelationInput);
 
           if (!isRelay) {
             query({});
@@ -246,7 +246,7 @@ export function defineDelete<Types extends SchemaTypes>(
           info: GraphQLResolveInfo
         ) => {
           const params = checkPermissionsAndGetParams(modelName, "delete", ctx, info, modelData);
-          const { returning, isRelay } = getReturning(info, columns);
+          const { returning, isRelay } = getReturning(info, columns, modelData.columnNameMap);
           const whereCondition = {
             AND: [structuredClone(args.where), params.where].filter((v) => v),
           };

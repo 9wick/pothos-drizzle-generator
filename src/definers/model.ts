@@ -31,14 +31,17 @@ export function defineModelObject<Types extends SchemaTypes>(
           createRelationCountField(t, generator, relayName, relay, tables)
         );
       const columnList = columns
-        .filter(({ name }) => filterColumns.includes(name))
-        .map((c) => [
-          c.name,
-          t.expose(c.name, {
-            type: generator.getDataType(c),
-            nullable: !c.notNull,
-          } as never),
-        ]);
+        .filter(({ name }) => filterColumns.includes(modelData.columnNameMap[name] ?? name))
+        .map((c) => {
+          const jsName = modelData.columnNameMap[c.name] ?? c.name;
+          return [
+            jsName,
+            t.expose(jsName, {
+              type: generator.getDataType(c),
+              nullable: !c.notNull,
+            } as never),
+          ];
+        });
 
       return Object.fromEntries([...relayCount, ...relayList, ...columnList]);
     },
