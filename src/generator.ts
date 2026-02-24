@@ -82,6 +82,7 @@ export type ModelData = {
   primaryColumns: Column[];
   inputColumns: Column[];
   columnNameMap: Record<string, string>;
+  fieldTypes?: Record<string, string | [string]>;
   tableInfo: TableConfig;
   relations: RelationsRecord;
   executable?:
@@ -192,6 +193,10 @@ export class DrizzleGenerator<Types extends SchemaTypes> {
         const exclude = (columnValue?.exclude as undefined | string[]) ?? [];
         const filterColumns = include.filter((name) => !exclude.includes(name));
 
+        const fieldTypesValue = (modelOptions?.fieldTypes ?? allOptions?.fieldTypes)?.({
+          modelName,
+        });
+
         const inputFieldValue = (modelOptions?.inputFields ?? allOptions?.inputFields)?.({
           modelName,
         });
@@ -211,6 +216,7 @@ export class DrizzleGenerator<Types extends SchemaTypes> {
             tableSingularAlias,
             tablePluralAlias,
             columnNameMap,
+            fieldTypes: fieldTypesValue,
             inputColumns: columns.filter((c) => filterInputColumns.includes(columnNameMap[c.name] ?? c.name)),
             tableInfo,
             executable: modelOptions?.executable ?? allOptions?.executable,
@@ -309,7 +315,7 @@ export class DrizzleGenerator<Types extends SchemaTypes> {
         const dbFields = inputColumns.map((col: Column) => [
           columnNameMap[col.name] ?? col.name,
           t.field({
-            type: this.getDataType(col),
+            type: this.getFieldDataType(modelName, col),
             required: col.notNull && !col.hasDefault,
           }),
         ]);
@@ -330,7 +336,7 @@ export class DrizzleGenerator<Types extends SchemaTypes> {
         const dbFields = inputColumns.map((c: Column) => [
           columnNameMap[c.name] ?? c.name,
           t.field({
-            type: this.getDataType(c),
+            type: this.getFieldDataType(modelName, c),
           }),
         ]);
         const relayFields = this.getInputRelation(modelName);
@@ -353,7 +359,7 @@ export class DrizzleGenerator<Types extends SchemaTypes> {
             return [
               columnNameMap[c.name] ?? c.name,
               t.field({
-                type: this.getInputOperator(this.getDataType(c)),
+                type: this.getInputOperator(this.getFieldDataType(modelName, c)),
               }),
             ];
           }),
@@ -472,5 +478,14 @@ export class DrizzleGenerator<Types extends SchemaTypes> {
     };
     const result = scalarMap[type] ?? "String";
     return isArray ? [result] : result;
+  }
+  getFieldDataType(modelName: string, column: Column & { dimensions?: number }): string | [string] {
+    const fieldTypes = this.getTables()[modelName]?.fieldTypes;
+    const jsName = this.getJsColumnName(modelName, column.name);
+    const byJsName = fieldTypes?.[jsName];
+    if (byJsName) return byJsName;
+    const bySqlName = fieldTypes?.[column.name];
+    if (bySqlName) return bySqlName;
+    return this.getDataType(column);
   }
 }

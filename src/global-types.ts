@@ -223,6 +223,14 @@ declare global {
       aliases?: <T extends U>(params: ModelParams<Types, T>) => AliasConfiguration;
 
       /**
+       * Override the GraphQL type for specific fields.
+       * Useful for customType columns where automatic type inference is incorrect.
+       */
+      fieldTypes?: <T extends U>(
+        params: ModelParams<Types, T>
+      ) => Record<string, string | [string]> | undefined;
+
+      /**
        * Define which fields to include or exclude in the input types.
        */
       inputFields?: <T extends U>(

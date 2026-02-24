@@ -37,7 +37,7 @@ export function defineModelObject<Types extends SchemaTypes>(
           return [
             jsName,
             t.expose(jsName, {
-              type: generator.getDataType(c),
+              type: generator.getFieldDataType(modelName, c),
               nullable: !c.notNull,
             } as never),
           ];
